@@ -117,7 +117,7 @@ Information order, top to bottom:
 - Header: identity, stage, status pill, progress bar, overdue count, **Add task**.
 - Plan table grouped **Before Day 1 (Pre-D1)** and **From Day 1 (Post-D1)**, each with an "x/y done" count.
 - Per task: due date, status (Done / Overdue / Due today / Due tomorrow / Upcoming / Locked until Day 1), added by, action.
-- **Add task** opens the catalog dialog. Available items are listed first. Each item shows its tags and a one-line description. Due date is pre-filled from the item's default offset to the start date, or the demo date + 2 days if that date has already passed, and can be edited.
+- **Add task** opens the catalog dialog. Available items are listed first. Each item shows its tags and a one-line description. Due date is pre-filled from the item's default offset to the start date, or the demo date + 2 days if that date has already passed, always inside the allowed range (see §6, Manager edits), and can be edited.
 - **Remove** uses an inline confirmation row (no pop-up dialog), then a toast with **Undo**.
 
 ### 5.5 States covered
@@ -132,6 +132,7 @@ Information order, top to bottom:
 | Pending confirmation | Employee Detail | Inline remove confirmation row. |
 | Catalog item unavailable | Add task dialog | Disabled with reason: "Already in Alex's plan" or "Pre-D1 tasks can't be added after the start date". |
 | Catalog exhausted | Add task dialog | Empty state: "Every catalog task is already in Alex's plan." |
+| Due date out of range | Add task dialog | The date picker only offers allowed dates, and a hint under it states the rule ("Pre-D1 tasks must be due before Day 1, Mon, Nov 2."). If the date is empty or outside the range on submit, the dialog stays open, an inline error appears under the field (e.g. "Pick a date on or before Sun, Nov 1."), focus returns to the field, and nothing is added. |
 | Nothing addable | Add task dialog | When the only items left are Pre-D1 and the hire has started: "No catalog tasks can be added for Chris right now." |
 | Task removed while open | Task Detail | "This task isn't in your plan" with a way back. |
 | Bad link / unknown page | Any | Friendly not-found screen with a button to a valid screen. |
@@ -166,6 +167,7 @@ Information order, top to bottom:
 - **HR-required** tasks (offer letter, I-9, orientation, laptop…) can't be removed by a manager.
 - **Completed** tasks can't be removed, so the record of progress stays intact.
 - A task already in the plan can't be added twice. Pre-D1 tasks can't be added after the start date.
+- **Due date must match the task's timing.** A Pre-D1 task is due between the demo date and the day before Day 1. A Post-D1 task is due on or after Day 1, and never before the demo date. Otherwise a Pre-D1 task could be due after the hire has started, or a Post-D1 task could unlock already overdue and flag the hire as Needs support. Empty or out-of-range dates are rejected with an inline error, never silently changed.
 
 **Sync:** employee and manager views read the same in-memory store (also saved to the browser). Any change shows up in the other view immediately.
 

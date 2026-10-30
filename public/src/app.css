@@ -183,6 +183,11 @@ main{padding-block:28px 64px}
 .field{display:flex;flex-direction:column;gap:6px;font-size:.88rem;font-weight:600}
 .modal-foot{flex-direction:row!important;justify-content:flex-end;align-items:center;flex-wrap:wrap}
 .field-inline{flex-direction:row;align-items:center;gap:10px;margin-right:auto}
+.due-field{display:flex;flex-direction:column;gap:4px;margin-right:auto;min-width:0}
+.due-field .field-inline{margin-right:0}
+.due-hint{font-size:.8rem}
+.due-error{font-size:.8rem;font-weight:600;color:var(--danger);display:flex;align-items:center;gap:4px}
+.field input[aria-invalid="true"]{border-color:var(--danger)}
 .field input{font:inherit;font-weight:500;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);max-width:220px}
 
 /* Manager */

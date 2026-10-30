@@ -147,18 +147,62 @@ export default async function (p) {
   p.has("manager sees it in memory", (await p.texts(".tile"))[1], "50%");
   await p.removeInitScript(block);
 
-  p.section("Due date can't be in the past");
+  p.section("Due date must fit the task's timing (Pre-D1 before Day 1, Post-D1 from Day 1)");
+  const pick = async (def) => {
+    await p.eval("(function(){var i=document.querySelector('input[value=\"" + def + "\"]');i.checked=true;i.dispatchEvent(new Event('change',{bubbles:true}));})()");
+    await wait(100);
+  };
+  const setDue = (v) => p.eval("document.getElementById('due-input').value='" + v + "'");
+  const dueAttr = (a) => p.eval("document.getElementById('due-input').getAttribute('" + a + "')");
+  const rowCount = () => p.eval("document.querySelectorAll('tbody tr:not(.group-row)').length");
   await p.open(p.APP);
   await p.eval("localStorage.clear()");
   await p.open(p.APP + "#team-alex");
+  const rowsBefore = await rowCount();
   await p.click('[data-action="add-open"]');
-  await p.eval("(function(){var i=document.querySelector('input[value=\"one1\"]');i.checked=true;i.dispatchEvent(new Event('change',{bubbles:true}));})()");
-  await wait(100);
-  p.eq("one1 default (start + 1)", await p.eval("document.getElementById('due-input').value"), "2026-11-03");
-  await p.eval("document.getElementById('due-input').value='2026-10-01'");
+
+  await pick("orgchart");
+  p.eq("Pre-D1 min = demo date", await dueAttr("min"), "2026-10-30");
+  p.eq("Pre-D1 max = day before Day 1", await dueAttr("max"), "2026-11-01");
+  p.eq("Pre-D1 hint", await p.text("#due-hint"), "Pre-D1 tasks must be due before Day 1, Mon, Nov 2.");
+  p.eq("no error before submit", await p.eval("!!document.getElementById('due-error')"), false);
+  await setDue("2026-12-15");
   await p.click('[data-action="add-submit"]');
+  p.ok("Pre-D1 after Day 1: dialog stays open", await p.eval("!!document.querySelector('.modal')"));
+  p.eq("Pre-D1 after Day 1: error", await p.text("#due-error"), "Pick a date on or before Sun, Nov 1.");
+  p.eq("error linked to the field", await dueAttr("aria-describedby"), "due-hint due-error");
+  p.eq("field marked invalid", await dueAttr("aria-invalid"), "true");
+  p.eq("focus on the field", await p.focused(), "due");
+  p.eq("bad value kept for correction", await p.eval("document.getElementById('due-input').value"), "2026-12-15");
+  await p.shot("m3-07-due-out-of-range");
+
+  await pick("one1");
+  p.eq("new pick clears the error", await p.eval("!!document.getElementById('due-error')"), false);
+  p.eq("one1 default (start + 1)", await p.eval("document.getElementById('due-input').value"), "2026-11-03");
+  p.eq("Post-D1 min = Day 1", await dueAttr("min"), "2026-11-02");
+  p.eq("Post-D1 has no max", await dueAttr("max"), null);
+  p.eq("Post-D1 hint", await p.text("#due-hint"), "Post-D1 tasks can be due on Day 1, Mon, Nov 2, or later.");
+  await setDue("2026-10-31");
+  await p.click('[data-action="add-submit"]');
+  p.ok("Post-D1 before Day 1: dialog stays open", await p.eval("!!document.querySelector('.modal')"));
+  p.eq("Post-D1 before Day 1: error", await p.text("#due-error"), "Pick a date on or after Mon, Nov 2.");
+  p.eq("focus on the field", await p.focused(), "due");
+
+  await setDue("");
+  await p.click('[data-action="add-submit"]');
+  p.ok("empty date: dialog stays open", await p.eval("!!document.querySelector('.modal')"));
+  p.eq("empty date: error", await p.text("#due-error"), "Choose a due date.");
+  p.eq("nothing added after three bad submits", await rowCount(), rowsBefore);
+  p.eq("no toast after bad submits", await p.eval("!!document.querySelector('.toast')"), false);
+
+  await setDue("2026-11-02");
+  await p.click('[data-action="add-submit"]');
+  p.eq("valid date: dialog closes", await p.eval("!!document.querySelector('.modal')"), false);
+  p.eq("valid date: one row added", await rowCount(), rowsBefore + 1);
   const oneRow = (await p.texts("tbody tr")).find((r) => r.indexOf("Schedule a 1:1") === 0) || "";
-  p.has("past date clamped to demo date", oneRow, "Fri, Oct 30");
+  p.has("added with the chosen date", oneRow, "Mon, Nov 2");
+  p.eq("store rejects an out-of-range date directly", await p.eval("YFP.store.addTask('alex','expense','2026-10-31')"), false);
+  p.eq("store rejects an empty date directly", await p.eval("YFP.store.addTask('alex','expense','')"), false);
 
   p.section("Undo window");
   p.ok("toast present", await p.eval("!!document.querySelector('.toast')"));

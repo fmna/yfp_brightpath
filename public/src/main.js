@@ -31,7 +31,7 @@
 
     if (changed) {
       if (!ui.keepToast) store.dismissToast();
-      ui.confirmRemove = null; ui.addOpen = false; ui.pick = null;
+      ui.confirmRemove = null; ui.addOpen = false; ui.pick = null; ui.dueErr = null;
       if (last.view.indexOf("hire") === 0) store.clearNewFlags(); // "Just added" clears on leaving Employee Detail
     }
     ui.keepToast = false;
@@ -64,7 +64,7 @@
   }
   store.onChange = render;
 
-  function closeDialog() { store.ui.addOpen = false; store.ui.pick = null; pendingFocus = "add-open"; render(); }
+  function closeDialog() { store.ui.addOpen = false; store.ui.pick = null; store.ui.dueErr = null; pendingFocus = "add-open"; render(); }
   function cancelRemove() { var back = store.ui.confirmRemove; store.ui.confirmRemove = null; pendingFocus = "rm-" + back; render(); }
 
   /* ----- Events: one delegated listener per type ----- */
@@ -90,7 +90,12 @@
       case "add-close": closeDialog(); break;
       case "add-submit":
         var emp = router.current().emp, input = document.getElementById("due-input");
-        if (emp && ui.pick) store.addTask(emp, ui.pick, (input && input.value) || ui.due);
+        if (!emp || !ui.pick) { closeDialog(); break; }
+        if (input) ui.due = input.value;
+        // Empty or out-of-range date: keep the dialog open, show the error, add nothing.
+        ui.dueErr = H.dueError(store.data[emp], ui.pick, ui.due);
+        if (ui.dueErr) { pendingFocus = "due"; render(); break; }
+        store.addTask(emp, ui.pick, ui.due);
         closeDialog();
         break;
       case "demo-link": store.setToast(fill(MOCK.toasts.prototypeLink, { url: el.getAttribute("data-url") })); render(); break;
@@ -106,6 +111,7 @@
       var emp = store.data[router.current().emp];
       store.ui.pick = el.value;
       store.ui.due = H.defaultDue(emp, el.value);
+      store.ui.dueErr = null;
       pendingFocus = "cat-" + el.value;
       render();
     } else if (el.id === "due-input") {

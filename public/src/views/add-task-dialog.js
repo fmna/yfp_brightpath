@@ -20,6 +20,21 @@
         (reason ? '<span class="cat-note">' + icon("lock", 13) + esc(reasonText(reason, emp)) + '</span>' : '') + '</span></label>';
   }
 
+  // Date input bounded by H.dueRange, a hint line, and an inline error after a bad submit.
+  function dueField(emp, def) {
+    var ui = YFP.store.ui, fmt = YFP.dates.fmt, copy = ERR.dueDateOutOfRange, r = H.dueRange(emp, def);
+    var hintTpl = DEFS[def].timing === "pre" ? copy.hint.pre : H.isStarted(emp) ? copy.hint.postStarted : copy.hint.postUpcoming;
+    var hint = fill(hintTpl, { start: fmt(emp.start), today: fmt(TODAY) });
+    var err = ui.dueErr ? fill(copy.errors[ui.dueErr], { min: fmt(r.min), max: r.max ? fmt(r.max) : "" }) : "";
+    return '<div class="due-field">' +
+      '<label class="field field-inline" for="due-input">Due date<input type="date" id="due-input" value="' + esc(ui.due) + '"' +
+        ' min="' + r.min + '"' + (r.max ? ' max="' + r.max + '"' : '') + ' required data-fkey="due"' +
+        ' aria-describedby="due-hint' + (err ? ' due-error' : '') + '"' + (err ? ' aria-invalid="true"' : '') + '></label>' +
+      '<span class="faint due-hint" id="due-hint">' + esc(hint) + '</span>' +
+      (err ? '<span class="due-error" id="due-error" role="alert">' + icon("alert", 13) + esc(err) + '</span>' : '') +
+    '</div>';
+  }
+
   function addTaskDialog(emp) {
     var ui = YFP.store.ui, cat = H.catalogFor(emp);
     var list = cat.available.map(function (c) { return item(emp, c, null); })
@@ -29,8 +44,7 @@
     var empty = allInPlan ? EMPTY.catalogExhausted : EMPTY.catalogNoneAvailable;
     var body = cat.available.length ? '<div class="catalog" role="radiogroup" aria-label="Task catalog">' + list.join("") + '</div>' :
       C.emptyState(fill(empty.title, { first: emp.first }), fill(empty.body, { first: emp.first }));
-    var due = ui.pick ?
-      '<label class="field field-inline" for="due-input">Due date<input type="date" id="due-input" value="' + esc(ui.due) + '" min="' + TODAY + '" required data-fkey="due"></label>' :
+    var due = ui.pick ? dueField(emp, ui.pick) :
       '<span class="faint foot-hint">' + (cat.available.length ? "Select a task to set its due date" : "") + '</span>';
     return '<div class="scrim" data-action="add-close"></div>' +
       '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="add-title">' +

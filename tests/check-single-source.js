@@ -7,7 +7,7 @@ var fs = require("fs"), path = require("path");
 
 var ROOT = path.join(__dirname, "..", "public");
 var RULES = ["status", "buckets", "stats", "started", "isStarted", "teamOrder", "teamAverage", "catalogFor",
-  "defaultDue", "canRemove", "makeTask", "t", "stage", "lastActivity", "startingNext", "validateStore", "byDue"];
+  "defaultDue", "dueRange", "dueError", "canRemove", "makeTask", "t", "stage", "lastActivity", "startingNext", "validateStore", "byDue"];
 
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).reduce(function (out, d) {

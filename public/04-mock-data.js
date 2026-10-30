@@ -77,8 +77,9 @@
       "Completed tasks cannot be removed",
       "A task already in the plan cannot be added twice",
       "Pre-D1 tasks cannot be added after the employee's start date",
-      "Due date cannot be earlier than the demo date",
-      "Default due date = start date + catalog offset; if that has passed, demo date + 2 days"
+      "Pre-D1 due date: from the demo date to the day before the start date",
+      "Post-D1 due date: on or after the later of the demo date and the start date",
+      "Default due date = start date + catalog offset; if that has passed, demo date + 2 days; then kept inside the allowed range"
     ]
   };
 
@@ -471,9 +472,21 @@
       expect: "'Review the org chart' is dimmed",
       reason: "Pre-D1 tasks can’t be added after the start date"
     },
-    dueDateInPast: {
-      where: "Add task dialog, Due date field", trigger: "Try to pick a date before Oct 30, 2026",
-      expect: "Date input has min = demo date; earlier dates can't be chosen"
+    dueDateOutOfRange: {
+      where: "Add task dialog, Due date field",
+      trigger: "Add 'Review the org chart' for Alex due Dec 15, or 'Schedule a 1:1' due Oct 31, or clear the date",
+      expect: "Dialog stays open, inline error under the field, focus on the field, nothing added",
+      // {start} = "Mon, Nov 2", {today} = "Fri, Oct 30", {min}/{max} formatted the same way
+      hint: {
+        pre: "Pre-D1 tasks must be due before Day 1, {start}.",
+        postUpcoming: "Post-D1 tasks can be due on Day 1, {start}, or later.",
+        postStarted: "Choose today, {today}, or a later date."
+      },
+      errors: {
+        empty: "Choose a due date.",
+        afterMax: "Pick a date on or before {max}.",
+        beforeMin: "Pick a date on or after {min}."
+      }
     },
     removeHrRequired: {
       where: "Employee Detail", trigger: "Look for a trash icon on 'Complete I-9 and tax forms'",
@@ -722,12 +735,34 @@
     return { employee: next, preD1Left: s.pre - s.preDone };
   }
 
-  // Pre-filled due date in the Add task dialog. Never in the past:
-  // start date + catalog offset, or demo date + 2 days if that has passed.
+  // Allowed due dates for a task added to this plan. max is null when open-ended.
+  // Pre-D1: demo date to the day before the start date.
+  // Post-D1: on or after the later of the demo date and the start date.
+  // (A Pre-D1 item after the start date gets max < min; catalogFor blocks it anyway.)
+  function dueRange(e, def, today) {
+    today = today || DEMO.today;
+    if (TASK_DEFS[def].timing === "pre") return { min: today, max: addDays(e.start, -1) };
+    return { min: today > e.start ? today : e.start, max: null };
+  }
+
+  // null if `due` is allowed, else "empty" | "beforeMin" | "afterMax".
+  function dueError(e, def, due, today) {
+    if (!isIso(due) || isNaN(D(due).getTime()) || iso(D(due)) !== due) return "empty";
+    var r = dueRange(e, def, today);
+    if (due < r.min) return "beforeMin";
+    if (r.max && due > r.max) return "afterMax";
+    return null;
+  }
+
+  // Pre-filled due date in the Add task dialog: start date + catalog offset,
+  // or demo date + 2 days if that has passed, then kept inside dueRange.
   function defaultDue(e, def, today) {
     today = today || DEMO.today;
     var due = addDays(e.start, TASK_DEFS[def].offset || 0);
-    return due < today ? addDays(today, 2) : due;
+    if (due < today) due = addDays(today, 2);
+    var r = dueRange(e, def, today);
+    if (r.max && due > r.max) due = r.max;
+    return due < r.min ? r.min : due;
   }
 
   function catalogFor(e, today) {
@@ -824,6 +859,30 @@
     eq("catalogForChris", catalogFor(s.chris), EXPECTED.catalogForChris);
     eq("defaultDue.future", defaultDue(s.alex, "orgchart"), "2026-11-01");
     eq("defaultDue.past", defaultDue(s.chris, "one1"), "2026-11-01"); // Oct 27 has passed → Oct 30 + 2
+
+    // Due date range: Alex (pre-start), Brooke (starts today), Chris (started)
+    eq("dueRange.alex.pre", dueRange(s.alex, "orgchart"), { min: "2026-10-30", max: "2026-11-01" });
+    eq("dueRange.alex.post", dueRange(s.alex, "one1"), { min: "2026-11-02", max: null });
+    eq("dueError.alex.preAfterDay1", dueError(s.alex, "orgchart", "2026-12-15"), "afterMax");
+    eq("dueError.alex.preOnDay1", dueError(s.alex, "orgchart", "2026-11-02"), "afterMax");
+    eq("dueError.alex.prePast", dueError(s.alex, "orgchart", "2026-10-29"), "beforeMin");
+    eq("dueError.alex.postBeforeDay1", dueError(s.alex, "one1", "2026-10-31"), "beforeMin");
+    eq("dueError.alex.ok", [dueError(s.alex, "orgchart", "2026-11-01"), dueError(s.alex, "one1", "2026-11-02")], [null, null]);
+    eq("dueError.empty", [dueError(s.alex, "one1", ""), dueError(s.alex, "one1", null), dueError(s.alex, "one1", "2026-13-40")], ["empty", "empty", "empty"]);
+    eq("dueRange.alex.startsTomorrow", dueRange(s.alex, "welcome", "2026-11-01"), { min: "2026-11-01", max: "2026-11-01" });
+    eq("defaultDue.alex.startsTomorrow", defaultDue(s.alex, "welcome", "2026-11-01"), "2026-11-01"); // was Nov 3, after Day 1
+    eq("dueRange.brooke.post", dueRange(s.brooke, "expense"), { min: "2026-10-30", max: null });
+    eq("dueError.brooke.beforeDay1", dueError(s.brooke, "expense", "2026-10-29"), "beforeMin");
+    eq("dueError.brooke.preAfterStart", dueError(s.brooke, "orgchart", "2026-10-30"), "afterMax");
+    eq("dueRange.chris.post", dueRange(s.chris, "expense"), { min: "2026-10-30", max: null });
+    eq("dueError.chris.past", dueError(s.chris, "expense", "2026-10-28"), "beforeMin");
+    ["2026-10-30", "2026-11-01"].forEach(function (day) {
+      EMPLOYEE_ORDER.forEach(function (k) {
+        catalogFor(s[k], day).available.forEach(function (c) {
+          eq("defaultDue in range " + k + "-" + c + "@" + day, dueError(s[k], c, defaultDue(s[k], c, day), day), null);
+        });
+      });
+    });
     eq("canRemove.hr", canRemove(s.alex, find(s.alex, "i9")), { ok: false, reason: "hrRequired" });
     eq("canRemove.completed", canRemove(s.alex, find(s.alex, "welcome")), { ok: false, reason: "completed" });
     eq("canRemove.open", canRemove(s.alex, find(s.alex, "handbook")), { ok: true });
@@ -902,6 +961,7 @@
       makeTask: makeTask, findTask: find, isStarted: isStarted, status: status, byDue: byDue, buckets: buckets,
       stats: stats, stage: stage, teamOrder: teamOrder, teamAverage: teamAverage,
       startingNext: startingNext, catalogFor: catalogFor, defaultDue: defaultDue,
+      dueRange: dueRange, dueError: dueError,
       canRemove: canRemove, lastActivity: lastActivity, validateStore: validateStore,
       // Date utilities and copy
       addDays: addDays, diffDays: diffDays, workdaysSince: workdaysSince, parseDate: D, fill: fill,

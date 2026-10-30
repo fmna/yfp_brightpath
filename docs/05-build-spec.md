@@ -191,7 +191,9 @@ The current helpers return IDs and assume the demo date. Extend them so the app 
 | `teamAverage(store, today)` | number | Already exists. |
 | `startingNext(store, today)` | `{ employee, preD1Left } \| null` | Earliest-starting employee who hasn't started yet. |
 | `catalogFor(emp, today)` | `{ available: defId[], unavailable: { [defId]: "already" \| "preAfterStart" } }` | Already exists. The view turns reasons into copy. |
-| `defaultDue(emp, defId, today)` | ISO date | **Already added.** Start date + the item's `offset`. If that has passed, demo date + 2 days, so a newly added task never starts in the past. Only sets the pre-filled date in the Add task dialog; bucket rules are unaffected. |
+| `defaultDue(emp, defId, today)` | ISO date | **Already added.** Start date + the item's `offset`. If that has passed, demo date + 2 days, so a newly added task never starts in the past. Then kept inside `dueRange` (e.g. a Pre-D1 item when the start date is tomorrow defaults to today). Only sets the pre-filled date in the Add task dialog; bucket rules are unaffected. |
+| `dueRange(emp, defId, today)` | `{ min, max }` (ISO; `max` is `null` when open-ended) | Pre-D1: demo date to the day before the start date. Post-D1: the later of the demo date and the start date, no max. The dialog sets the date input's `min`/`max` from it. |
+| `dueError(emp, defId, due, today)` | `null \| "empty" \| "beforeMin" \| "afterMax"` | The one due-date check. The dialog uses it to show an inline error; `store.addTask` uses it to reject the date. Nothing is clamped. |
 | `canRemove(emp, task)` | `{ ok: boolean, reason?: "hrRequired" \| "completed" }` | Based on `taskDefs[def].source === "hr"`, not `addedBy`. See open question 2. |
 | `lastActivity(emp, today)` | `{ kind: "justNow" \| "completed" \| "none", task, daysAgo }` | The view writes "Just now", "Yesterday", etc. |
 | `validateStore(obj)` | boolean | True if every employee in `employeeOrder` is present, every task's `def` exists in `taskDefs`, and there are no duplicates. Used when loading from `localStorage`. |
@@ -205,7 +207,7 @@ The current helpers return IDs and assume the demo date. Extend them so the app 
 
 1. **One code path.** The app calls `MOCK.helpers` and has nothing of its own to drift.
 2. **Self-check on load.** `main.js` runs `MOCK.helpers.selfCheck()` once at boot. If it fails, it logs `console.warn("YFP self-check failed …")` with the failing lines. Nothing is shown to users.
-3. **Static check.** `node tests/check-single-source.js` scans `index.html` and `src/**/*.js` and fails if it finds a definition of any rule name (`status`, `buckets`, `stats`, `started`, `isStarted`, `teamOrder`, `teamAverage`, `catalogFor`, `defaultDue`, `canRemove`, `makeTask`, `t`, plus `stage`, `lastActivity`, `startingNext`, `validateStore`, `byDue`) as a function declaration, variable, assignment or object method outside `04-mock-data.js`. About 50 lines, no dependencies.
+3. **Static check.** `node tests/check-single-source.js` scans `index.html` and `src/**/*.js` and fails if it finds a definition of any rule name (`status`, `buckets`, `stats`, `started`, `isStarted`, `teamOrder`, `teamAverage`, `catalogFor`, `defaultDue`, `dueRange`, `dueError`, `canRemove`, `makeTask`, `t`, plus `stage`, `lastActivity`, `startingNext`, `validateStore`, `byDue`) as a function declaration, variable, assignment or object method outside `04-mock-data.js`. About 50 lines, no dependencies.
 
 ### 5.5 Rule reference
 
@@ -221,7 +223,7 @@ The rules themselves are unchanged from `02-user-flow.md` §6 and `04-mock-data.
 | Progress | Completed ÷ all assigned (locked included), `Math.round` |
 | Needs support | One or more unlocked tasks past due. Otherwise On track. |
 | Stage | "Starts {date}" before Day 1; "Day N" (working days since start, inclusive) after |
-| Manager edits | Catalog only; HR-required tasks can't be removed; completed tasks can't be removed; no duplicates; no Pre-D1 tasks after start; due date ≥ demo date |
+| Manager edits | Catalog only; HR-required tasks can't be removed; completed tasks can't be removed; no duplicates; no Pre-D1 tasks after start; Pre-D1 due date from the demo date to the day before Day 1; Post-D1 due date on or after the later of the demo date and Day 1; empty or out-of-range dates are rejected, not clamped |
 
 ---
 
@@ -444,6 +446,7 @@ Implementation: `loadFixture()` in `store.js` at boot (read `URLSearchParams`, c
 | Nothing addable (some items blocked as Pre-D1 after the start date) | `?fixture=chrisCatalogExhausted`, then `#team-chris` → Add task |
 | Locked task | `#task-alex-orientation` |
 | Catalog item unavailable | `#team-alex` and `#team-chris` → Add task |
+| Due date out of range | `#team-alex` → Add task → "Review the org chart" due Dec 15, or "Schedule a 1:1" due Oct 31, or clear the date → Add |
 | Corrupt storage | Put `MOCK.fixtures.corruptStorage.raw` into `localStorage` under `yfp-demo-v2` and reload |
 | Unknown page | `#settings`, `#team-dana`, `#task-alex-nope` |
 

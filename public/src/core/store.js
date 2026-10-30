@@ -42,7 +42,7 @@
     try { localStorage.setItem(KEY, JSON.stringify(store.data)); } catch (e) { /* storage blocked: memory only */ }
   }
 
-  function freshUi() { return { confirmRemove: null, addOpen: false, pick: null, due: "", toast: null, keepToast: false }; }
+  function freshUi() { return { confirmRemove: null, addOpen: false, pick: null, due: "", dueErr: null, toast: null, keepToast: false }; }
 
   /* ----- Lookups ----- */
 
@@ -97,7 +97,7 @@
   function addTask(empId, defId, due) {
     var emp = store.data[empId];
     if (!emp || H.catalogFor(emp).available.indexOf(defId) < 0) return false;
-    if (!due || due < TODAY) due = TODAY;
+    if (H.dueError(emp, defId, due)) return false;
     var tk = H.makeTask(defId, due, null, "morgan");
     tk.isNew = true;
     emp.tasks.push(tk);
