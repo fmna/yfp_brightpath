@@ -2,13 +2,11 @@
 
 A browser-based onboarding prototype for BrightPath Technologies. New hires see every onboarding task in one place, sorted into **Do today · Do later · Done**, and can tell what's due before Day 1 from what comes after. Their hiring manager sees progress across direct reports, spots who needs support, and adds or removes tasks.
 
-**Live demo:** https://YOUR-APP.vercel.app 
+**Live demo:** https://yfpbrightpath.vercel.app
 
 **Demo video:** [LINK] 
 
 **Repository:** https://github.com/fmna/yfp_brightpath
-
-<!-- Before submitting: find-and-replace https://YOUR-APP.vercel.app with the real Vercel URL, and fill in the video link. -->
 
 ---
 
@@ -27,7 +25,7 @@ A browser-based onboarding prototype for BrightPath Technologies. New hires see 
 
 ## Try it in two minutes
 
-Open the [live demo](https://YOUR-APP.vercel.app). No login: the **View as** switcher in the top bar swaps between the new hire and the manager. The demo runs on a fixed date, **Fri, Oct 30, 2026**, so it behaves the same every time. Click **Reset demo** before you start.
+Open the [live demo](https://yfpbrightpath.vercel.app). No login: the **View as** switcher in the top bar swaps between the new hire and the manager. The demo runs on a fixed date, **Fri, Oct 30, 2026**, so it behaves the same every time. Click **Reset demo** before you start.
 
 1. **As Alex (new hire):** "Next up" points to *Complete I-9 and tax forms*. Click **Open task**, then **Mark as complete**. The card moves to Done, and progress goes from **18% to 27%**.
 2. **Switch to Morgan (manager).** Alex's row shows **27%** and **"Just now"**, and the team average goes from 47% to 50%. Chris is flagged in red as needing support.
@@ -52,16 +50,16 @@ Each link loads a prepared starting state. A notice at the top names the sample 
 
 | State | Link |
 |---|---|
-| New hire at risk (overdue task) | [?fixture=alexOverdue#task-alex-i9](https://YOUR-APP.vercel.app/?fixture=alexOverdue#task-alex-i9) |
-| All Pre-D1 work done ("You're all caught up") | [?fixture=alexAllCaughtUp](https://YOUR-APP.vercel.app/?fixture=alexAllCaughtUp) |
-| Nothing completed yet (empty Done column) | [?fixture=alexFreshStart](https://YOUR-APP.vercel.app/?fixture=alexFreshStart) |
-| Locked Post-D1 task (can't be completed before Day 1) | [#task-alex-orientation](https://YOUR-APP.vercel.app/#task-alex-orientation) |
-| Task removed while the new hire had it open | [?fixture=alexTaskRemoved#task-alex-photo](https://YOUR-APP.vercel.app/?fixture=alexTaskRemoved#task-alex-photo) |
-| Catalog exhausted (nothing left to add) | [?fixture=alexCatalogExhausted#team-alex](https://YOUR-APP.vercel.app/?fixture=alexCatalogExhausted#team-alex), then **Add task** |
-| Pre-D1 items blocked after the start date | [#team-chris](https://YOUR-APP.vercel.app/#team-chris), then **Add task** |
-| Nothing left that can be added | [?fixture=chrisCatalogExhausted#team-chris](https://YOUR-APP.vercel.app/?fixture=chrisCatalogExhausted#team-chris), then **Add task** |
-| Due date out of range | [#team-alex](https://YOUR-APP.vercel.app/#team-alex) → **Add task** → *Review the org chart* → set Dec 15 → **Add** |
-| Broken or out-of-date link | [#settings](https://YOUR-APP.vercel.app/#settings) |
+| New hire at risk (overdue task) | [?fixture=alexOverdue#task-alex-i9](https://yfpbrightpath.vercel.app?fixture=alexOverdue#task-alex-i9) |
+| All Pre-D1 work done ("You're all caught up") | [?fixture=alexAllCaughtUp](https://yfpbrightpath.vercel.app/?fixture=alexAllCaughtUp) |
+| Nothing completed yet (empty Done column) | [?fixture=alexFreshStart](https://yfpbrightpath.vercel.app/?fixture=alexFreshStart) |
+| Locked Post-D1 task (can't be completed before Day 1) | [#task-alex-orientation](https://yfpbrightpath.vercel.app/#task-alex-orientation) |
+| Task removed while the new hire had it open | [?fixture=alexTaskRemoved#task-alex-photo](https://yfpbrightpath.vercel.app/?fixture=alexTaskRemoved#task-alex-photo) |
+| Catalog exhausted (nothing left to add) | [?fixture=alexCatalogExhausted#team-alex](https://yfpbrightpath.vercel.app/?fixture=alexCatalogExhausted#team-alex), then **Add task** |
+| Pre-D1 items blocked after the start date | [#team-chris](https://yfpbrightpath.vercel.app/#team-chris), then **Add task** |
+| Nothing left that can be added | [?fixture=chrisCatalogExhausted#team-chris](https://yfpbrightpath.vercel.app/?fixture=chrisCatalogExhausted#team-chris), then **Add task** |
+| Due date out of range | [#team-alex](https://yfpbrightpath.vercel.app/#team-alex) → **Add task** → *Review the org chart* → set Dec 15 → **Add** |
+| Broken or out-of-date link | [#settings](https://yfpbrightpath.vercel.app/#settings) |
 
 ---
 
