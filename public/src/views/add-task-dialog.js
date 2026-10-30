@@ -13,7 +13,7 @@
 
   function item(emp, def, reason) {
     var d = DEFS[def], ui = YFP.store.ui;
-    return '<label class="cat-item' + (reason ? " disabled" : "") + '">' +
+    return '<label class="cat-item' + (reason ? " disabled" : "") + (ui.pick === def ? " selected" : "") + '">' +
       '<input type="radio" name="cat" value="' + def + '" data-fkey="cat-' + def + '"' + (reason ? " disabled" : "") + (ui.pick === def ? " checked" : "") + '>' +
       '<span class="cat-main"><strong>' + esc(d.title) + '</strong>' + C.tags(def) +
         '<span class="muted cat-desc">' + esc(d.desc) + '</span>' +

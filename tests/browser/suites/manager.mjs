@@ -1,0 +1,168 @@
+// Milestone 2: manager experience (build-spec §10.2 steps 3–7, user-flow §5.3–5.4)
+export default async function (p) {
+  await p.open(p.APP);
+  await p.eval("localStorage.clear()");
+  await p.open(p.APP + "#home");
+  // Demo step 2: Alex completes the I-9
+  await p.click('[data-fkey="next"]');
+  await p.click('[data-action="complete"]');
+
+  p.section("Switch to Morgan");
+  await p.click('[data-action="role"][data-role="morgan"]');
+  p.eq("hash", await p.eval("location.hash"), "#team");
+  p.eq("title", await p.eval("document.title"), "Manager · YFP Onboarding Prototype");
+  p.eq("switcher pressed", await p.eval("document.querySelector('[data-role=\"morgan\"]').getAttribute('aria-pressed')"), "true");
+  p.eq("toast cleared on screen change", await p.eval("!!document.querySelector('.toast')"), false);
+
+  p.section("Manager Dashboard");
+  const tiles = await p.texts(".tile");
+  p.has("need support tile", tiles[0], "1");
+  p.has("need support names", tiles[0], "Chris · 2 overdue");
+  p.has("average 50%", tiles[1], "50%");
+  p.has("starting next", tiles[2], "Alex Anderson");
+  p.has("starting next detail", tiles[2], "Mon, Nov 2 · 3 Pre-D1 tasks left");
+  const callouts = await p.texts(".callout");
+  p.eq("one callout", callouts.length, 1);
+  p.has("callout copy", callouts[0], "Chris Carter may need support. 2 overdue tasks, including “Complete security and compliance training” (due Wed, Oct 28).");
+  p.has("callout button", callouts[0], "Review Chris’s plan");
+  p.eq("row order", await p.texts("tbody .who-btn"), ["Chris Carter", "Brooke Bennett", "Alex Anderson"]);
+  const rows = await p.texts("tbody tr");
+  p.has("Chris stage", rows[0], "Day 5");
+  p.has("Chris next due", rows[0], "Complete security and compliance training Overdue by 2 days");
+  p.has("Chris status", rows[0], "Needs support");
+  p.has("Brooke stage", rows[1], "Day 1");
+  p.has("Brooke started", rows[1], "Started Fri, Oct 30");
+  p.has("Brooke 55%", rows[1], "55%");
+  p.has("Alex stage", rows[2], "Starts Mon, Nov 2");
+  p.has("Alex sub", rows[2], "3 days until Day 1");
+  p.has("Alex 27%", rows[2], "27%");
+  p.has("Alex 3/11", rows[2], "3/11 tasks");
+  p.has("Alex Just now", rows[2], "Just now");
+  p.has("Alex activity", rows[2], "Completed “Complete I-9 and tax forms”");
+  p.ok("Just now is green", await p.eval("!!document.querySelector('tbody tr:nth-child(3) .fresh')"));
+  p.ok("Chris bar is red", await p.eval("document.querySelector('tbody tr:nth-child(1) .bar').classList.contains('risk')"));
+  p.ok("Alex bar is green", await p.eval("!document.querySelector('tbody tr:nth-child(3) .bar').classList.contains('risk')"));
+  p.has("Brooke older activity", rows[1], "Yesterday");
+  p.eq("header cells scoped", await p.eval("Array.from(document.querySelectorAll('thead th')).every(function(t){return t.getAttribute('scope')==='col';})"), true);
+  await p.shot("m2-01-team", true);
+
+  p.section("Review Chris's plan");
+  await p.click('[data-fkey="callout-chris"]');
+  p.eq("hash", await p.eval("location.hash"), "#team-chris");
+  const head = await p.text(".hire-head");
+  p.has("header stage", head, "Day 5 · Started Mon, Oct 26");
+  p.has("header status", head, "Needs support");
+  p.has("header overdue", head, "2 overdue");
+  p.has("header progress", head, "67% complete");
+  const groups = await p.texts(".group-row");
+  p.eq("groups", groups, ["BEFORE DAY 1 (PRE-D1) · 6/6 DONE", "FROM DAY 1 (POST-D1) · 2/6 DONE"]);
+  const planRows = await p.texts("tbody tr:not(.group-row)");
+  const row = (title) => planRows.find((r) => r.indexOf(title) === 0) || "";
+  p.has("security overdue", row("Complete security"), "Overdue");
+  p.has("buddy overdue", row("Meet your onboarding buddy"), "Overdue");
+  p.has("wiki due date", row("Review the Team Wiki"), "Mon, Nov 2");
+  p.has("goals upcoming", row("Set 30-day goals"), "Upcoming");
+  p.has("I-9 required by HR", row("Complete I-9"), "Required by HR");
+  p.has("handbook completed (no trash)", row("Read the Employee Handbook"), "Completed");
+  p.eq("trash only on open catalog tasks", await p.eval("Array.from(document.querySelectorAll('[data-action=\"remove-ask\"]')).map(function(b){return b.getAttribute('data-id');})"), ["chris-security", "chris-buddy", "chris-wiki", "chris-goals"]);
+  p.eq("HR tooltip", await p.eval("document.querySelector('.required').title"), "Required tasks are managed by HR");
+  await p.shot("m2-02-chris", true);
+
+  p.section("Chris's catalog");
+  await p.click('[data-action="add-open"]');
+  p.eq("dialog focus on title", await p.focused(), "add-title");
+  const chrisCat = await p.eval("Array.from(document.querySelectorAll('.cat-item')).map(function(l){return [l.querySelector('input').value,l.querySelector('input').disabled,(l.querySelector('.cat-note')||{}).textContent||''];})");
+  p.eq("available first", chrisCat.filter((c) => !c[1]).map((c) => c[0]), ["one1", "expense", "benefits"]);
+  p.eq("available listed before unavailable", chrisCat.slice(0, 3).every((c) => !c[1]), true);
+  p.eq("org chart reason", (chrisCat.find((c) => c[0] === "orgchart") || [])[2], "Pre-D1 tasks can’t be added after the start date");
+  p.eq("already reason", (chrisCat.find((c) => c[0] === "wiki") || [])[2], "Already in Chris’s plan");
+  p.ok("submit disabled until a pick", await p.eval("document.querySelector('[data-action=\"add-submit\"]').disabled"));
+  await p.eval("(function(){var i=document.querySelector('input[value=\"one1\"]');i.checked=true;i.dispatchEvent(new Event('change',{bubbles:true}));})()");
+  await new Promise((r) => setTimeout(r, 120));
+  p.eq("past offset → demo date + 2", await p.eval("document.getElementById('due-input').value"), "2026-11-01");
+  p.eq("min = demo date", await p.eval("document.getElementById('due-input').min"), "2026-10-30");
+  await p.key("Escape");
+  p.eq("Esc closes dialog", await p.eval("!!document.querySelector('.modal')"), false);
+  p.eq("focus back to Add task", await p.focused(), "add-open");
+  p.eq("nothing added", (await p.texts("tbody tr:not(.group-row)")).length, 12);
+
+  p.section("Breadcrumb");
+  await p.click('[data-action="back-team"]');
+  p.eq("back to team", await p.eval("location.hash"), "#team");
+
+  p.section("Add a task to Alex's plan");
+  await p.click('[data-fkey="hire-alex"]');
+  p.eq("hash", await p.eval("location.hash"), "#team-alex");
+  await p.click('[data-action="add-open"]');
+  const alexCat = await p.eval("Array.from(document.querySelectorAll('.cat-item input')).map(function(i){return [i.value,i.disabled];})");
+  p.eq("Alex available", alexCat.filter((c) => !c[1]).map((c) => c[0]), ["orgchart", "one1", "expense", "goals", "benefits"]);
+  p.eq("Alex unavailable", alexCat.filter((c) => c[1]).map((c) => c[0]), ["handbook", "welcome", "buddy", "wiki", "security"]);
+  await p.eval("(function(){var i=document.querySelector('input[value=\"orgchart\"]');i.checked=true;i.dispatchEvent(new Event('change',{bubbles:true}));})()");
+  await new Promise((r) => setTimeout(r, 120));
+  p.eq("org chart default due Sun, Nov 1", await p.eval("document.getElementById('due-input').value"), "2026-11-01");
+  p.ok("selected item highlighted", await p.eval("document.querySelector('input[value=\"orgchart\"]').checked"));
+  p.eq("button copy", await p.text('[data-action="add-submit"]'), "Add to Alex’s plan");
+  await p.shot("m2-03-dialog");
+  await p.eval("document.querySelector('.modal-body').scrollTop=9999");
+  await p.shot("m2-03b-dialog-unavailable");
+  await p.click('[data-action="add-submit"]');
+  p.eq("dialog closed", await p.eval("!!document.querySelector('.modal')"), false);
+  p.eq("toast", await p.text(".toast span"), "Added “Review the org chart” to Alex’s plan.");
+  p.has("Alex 25% (3/12)", await p.text(".hire-head"), "25% complete");
+  p.has("3 of 12", await p.text(".hire-head"), "3 of 12 tasks");
+  const orgRow = (await p.texts("tbody tr:not(.group-row)")).find((r) => r.indexOf("Review the org chart") === 0) || "";
+  p.has("Just added tag", orgRow, "Just added");
+  p.has("added by Morgan", orgRow, "Morgan Miller");
+  p.has("in Pre-D1 group", (await p.texts(".group-row"))[0], "3/7 DONE");
+  p.eq("focus back to Add task", await p.focused(), "add-open");
+  await p.shot("m2-04-added", true);
+
+  p.section("Team average after add");
+  await p.click('[data-action="back-team"]');
+  p.has("average 49%", (await p.texts(".tile"))[1], "49%");
+
+  p.section("Alex sees it right away");
+  await p.click('[data-action="role"][data-role="alex"]');
+  p.has("org chart in Do later", (await p.texts(".col-later .card-title")).join("|"), "Review the org chart");
+  p.eq("ring 25%", await p.text(".ring-num"), "25%");
+
+  p.section("Remove it, cancel, confirm, undo");
+  await p.hash("#team-alex");
+  p.ok("Just added cleared after leaving Employee Detail", (await p.texts(".chip-new")).length === 0, await p.texts(".chip-new"));
+  await p.click('[data-fkey="rm-alex-orgchart"]');
+  p.has("inline confirm row", await p.text(".confirm-row"), "Remove “Review the org chart” from Alex’s plan? Alex will no longer see it.");
+  p.eq("no pop-up dialog", await p.eval("!!document.querySelector('[role=\"dialog\"]')"), false);
+  p.eq("focus on Remove task", await p.focused(), "rm-confirm");
+  await p.click('[data-action="remove-cancel"]');
+  p.eq("cancel → no confirm row", await p.eval("!!document.querySelector('.confirm-row')"), false);
+  p.eq("focus back on trash", await p.focused(), "rm-alex-orgchart");
+  await p.click('[data-fkey="rm-alex-orgchart"]');
+  await p.key("Escape");
+  p.eq("Esc cancels confirm", await p.eval("!!document.querySelector('.confirm-row')"), false);
+  await p.click('[data-fkey="rm-alex-orgchart"]');
+  await p.shot("m2-05-confirm");
+  await p.click('[data-action="remove-confirm"]');
+  p.eq("toast", await p.text(".toast span"), "Removed “Review the org chart” from Alex’s plan.");
+  p.ok("toast has Undo", await p.eval("!!document.querySelector('[data-action=\"toast-undo\"]')"));
+  p.has("back to 27%", await p.text(".hire-head"), "27% complete");
+  p.ok("row gone", (await p.texts("tbody tr")).every((r) => r.indexOf("Review the org chart") < 0));
+  const orderBefore = await p.eval("document.querySelectorAll('tbody tr').length");
+  await p.click('[data-action="toast-undo"]');
+  p.has("undo restores 25%", await p.text(".hire-head"), "25% complete");
+  p.ok("row back", (await p.texts("tbody tr")).some((r) => r.indexOf("Review the org chart") === 0));
+  p.eq("one more row after undo", await p.eval("document.querySelectorAll('tbody tr').length"), orderBefore + 1);
+  // Remove again so the demo ends at 27% / 50%
+  await p.click('[data-fkey="rm-alex-orgchart"]');
+  await p.click('[data-action="remove-confirm"]');
+  await p.click('[data-action="back-team"]');
+  p.has("average back to 50%", (await p.texts(".tile"))[1], "50%");
+
+  p.section("Persistence + reset");
+  await p.open(p.APP + "#team");
+  p.has("reload keeps 50%", (await p.texts(".tile"))[1], "50%");
+  p.has("reload keeps Just now", (await p.texts("tbody tr"))[2], "Just now");
+  await p.click('[data-action="reset"]');
+  p.eq("reset toast", await p.text(".toast span"), "Demo data reset to the starting state.");
+  p.has("reset → 47%", (await p.texts(".tile"))[1], "47%");
+  p.has("reset → Alex 18%", (await p.texts("tbody tr"))[2], "18%");
+}

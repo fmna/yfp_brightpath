@@ -1,0 +1,6 @@
+# Claude Code local settings (per-user permissions; not part of the project)
+.claude/
+
+# OS clutter
+.DS_Store
+Thumbs.db

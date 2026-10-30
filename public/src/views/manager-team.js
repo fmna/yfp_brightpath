@@ -54,7 +54,7 @@
         '<div class="faint cell-sub">' + esc(e.role) + ' · ' + esc(e.dept) + '</div></div></div></th>' +
       '<td class="cell-stage"><strong>' + esc(x.stg.label) + '</strong><div class="faint cell-sub">' + stageSub(e, x.stg) + '</div></td>' +
       '<td><div class="prog-cell"><div class="meter-top"><strong class="num">' + s.pct + '%</strong><span class="faint num">' + s.done + '/' + s.total + ' tasks</span></div>' + C.bar(s.pct, s.needsSupport) + '</div></td>' +
-      '<td>' + (nx ? esc(DEFS[nx.def].title) + '<div class="cell-sub ' + (nd.cls === "overdue" ? "overdue-txt" : "faint") + '">' + esc(nd.text) + '</div>' : '<span class="faint">' + esc(EMPTY.managerNothingOpen.title) + '</span>') + '</td>' +
+      '<td>' + (nx ? esc(DEFS[nx.def].title) + '<div class="cell-sub cell-due ' + (nd.cls === "overdue" ? "overdue-txt" : "faint") + '">' + esc(nd.text) + '</div>' : '<span class="faint">' + esc(EMPTY.managerNothingOpen.title) + '</span>') + '</td>' +
       '<td>' + C.pill(s.needsSupport) + '</td>' +
       '<td><span class="cell-when' + (a.fresh ? " fresh" : "") + '">' + esc(a.when) + '</span><div class="faint cell-sub cell-activity">' + esc(a.text) + '</div></td>' +
     '</tr>';

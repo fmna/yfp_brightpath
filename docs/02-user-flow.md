@@ -132,6 +132,7 @@ Information order, top to bottom:
 | Pending confirmation | Employee Detail | Inline remove confirmation row. |
 | Catalog item unavailable | Add task dialog | Disabled with reason: "Already in Alex's plan" or "Pre-D1 tasks can't be added after the start date". |
 | Catalog exhausted | Add task dialog | Empty state: "Every catalog task is already in Alex's plan." |
+| Nothing addable | Add task dialog | When the only items left are Pre-D1 and the hire has started: "No catalog tasks can be added for Chris right now." |
 | Task removed while open | Task Detail | "This task isn't in your plan" with a way back. |
 | Bad link / unknown page | Any | Friendly not-found screen with a button to a valid screen. |
 | Undo | Complete, remove | Toast with **Undo** for 7 seconds. |

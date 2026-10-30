@@ -26,8 +26,9 @@ Before major architecture or framework decisions:
 
 Before finishing a milestone:
 - Run the `04-mock-data.js` self-check with Node: `node public/04-mock-data.js`.
-- Run `node tests/check-single-source.js` once it exists.
+- Run `node tests/check-single-source.js`.
 - Both must pass.
+- After UI changes, also run `node tests/browser/run.mjs` (needs Chrome or Edge).
 
 For implementation:
 - You may create files and folders needed to implement the application.

@@ -26,6 +26,7 @@
     var r = router.current(), ui = store.ui, key = viewKey(r);
     var active = document.activeElement;
     var focusKey = active && active.getAttribute ? active.getAttribute("data-fkey") : null;
+    var focusInToast = toastRoot.contains(active);
     var changed = last.view !== null && last.view !== key;
 
     if (changed) {
@@ -38,7 +39,7 @@
     var html = r.view === "home" ? V.employeeHome(r) :
       r.view === "team" ? V.managerTeam() :
       r.view === "hire" ? V.employeeDetail(r) : V.notFound();
-    app.innerHTML = V.topbar(r) + '<main id="main"><div class="wrap">' + html + '</div></main>';
+    app.innerHTML = V.topbar(r) + '<main id="main" tabindex="-1"><div class="wrap">' + html + '</div></main>';
     toastRoot.innerHTML = YFP.components.toast(ui.toast);
     document.title = (r.role === "morgan" ? "Manager" : "Alex") + " · YFP Onboarding Prototype";
 
@@ -52,7 +53,9 @@
     else if (pendingFocus) target = byKey(pendingFocus);
     else if (panelClosed) target = byKey(opener) || byKey("next");
     else target = byKey(focusKey);
-    if (target) target.focus({ preventScroll: panelOpened || dialogOpened });
+    // The toast closed (timer, Undo, Dismiss) while it had focus: don't drop focus to <body>.
+    if (!target && focusInToast) target = document.getElementById("main");
+    if (target) target.focus({ preventScroll: panelOpened || dialogOpened || target.id === "main" });
     if (panelClosed) opener = null;
     pendingFocus = null;
 

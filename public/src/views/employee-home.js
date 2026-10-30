@@ -34,7 +34,8 @@
   }
 
   function summary(emp, s, stg, lockedCount) {
-    var preFoot = stg.started ? 'Due before ' + dates.fmt(emp.start) :
+    var preFoot = s.pre && s.preDone === s.pre ? icon("check", 12) + ' All done before Day 1' :
+      stg.started ? 'Due before ' + dates.fmt(emp.start) :
       'Finish by ' + dates.fmt(H.addDays(emp.start, -1)) + ' · ' + plural(stg.daysToStart, "day") + ' left';
     var postFoot = stg.started ? 'Unlocked' : icon("lock", 12) + ' Locked until ' + dates.fmt(emp.start);
     return '<div class="summary">' +

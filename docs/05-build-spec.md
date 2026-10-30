@@ -44,7 +44,7 @@ The build has one job: make the **primary demo workflow** reliable and easy to f
 
 **Why not React or Vite.** The prototype already proves the workflow without a framework. A framework would add a build step, npm dependencies and a rewrite without adding user value. If YFP moves past MVP (real data, more screens, a team of engineers), the natural next step is Vite + React + TypeScript. The rules in `04-mock-data.js` are framework-agnostic, so they would carry over unchanged.
 
-**Browser support.** Current desktop versions of Chrome, Edge, Safari and Firefox.
+**Browser support.** Current desktop versions of Chrome, Edge, Safari and Firefox. The JavaScript is ES5 syntax plus `URLSearchParams`, `closest()` and `padStart`, so it runs well below that. The CSS degrades gracefully: the softer card and link tints use `color-mix()` inside `@supports` (plain borders below Safari 16.2 / Firefox 113), and the selected catalog item uses a class rather than `:has()`. Nothing else used is newer than Safari 15.4 or Firefox 92 (`accent-color`, `:focus-visible`), and both of those are cosmetic if missing. Chrome and Edge are tested automatically (§10.1); Safari and Firefox are covered by this audit and the `polish` suite's older-engine CSS check, not by an automated run.
 
 ---
 
@@ -69,7 +69,8 @@ yfp-brightpath/                 GitHub repo root (reviewers see everything here)
 │   ├── 04-mock-data.js         Lives here because the app loads it at runtime; keeps its number to match the docs
 │   └── src/                    (detailed below)
 └── tests/
-    └── check-single-source.js  Fails if rule logic is redefined outside 04-mock-data.js (§5.4)
+    ├── check-single-source.js  Fails if rule logic is redefined outside 04-mock-data.js (§5.4)
+    └── browser/                Headless browser suites, no dependencies (§10.1)
 ```
 
 The original single-file prototype isn't kept as a separate copy. Commit it as-is first, then restructure in the next commit, so git history preserves it.
@@ -146,6 +147,7 @@ All of this already exists in `04-mock-data.js`. The build reads it through `win
 | `catalog` | 10 `defId`s in dialog order | The Add task dialog. |
 | `seed()` | Returns a **fresh** store: `{ alex, brooke, chris }`, each `{ id, name, first, initials, role, dept, start, tasks: Assignment[] }` | Starting state and Reset demo. |
 | `expected`, `demoScript`, `emptyStates`, `errorScenarios`, `fixtures` | See file | Tests, demo rehearsal, state checks. |
+| `toasts` | `{ completed, reopened, added, removed, prototypeLink, reset }` templates | Toast copy for store mutations. The self-check fills them and compares with `expected`. |
 | `helpers` | Rule functions (§5) | **Every** rule decision in the app. |
 
 **Assignment** (one task in one employee's plan):
@@ -163,9 +165,9 @@ All of this already exists in `04-mock-data.js`. The build reads it through `win
 
 ## 5. Business rules: single source of truth
 
-### 5.1 The problem today
+### 5.1 The problem this solved
 
-`index.html` loads all of its **data** from `04-mock-data.js`, but it still defines its own copies of the **rules**: `t()`, `started()`, `status()`, `buckets()`, `stats()` and the team sort (prototype lines ~265–330). The self-check tests the copies in `04-mock-data.js`, not the ones the app runs. They agree today, but an edit to one copy only would make the app and the self-check silently disagree.
+The original single-file prototype loaded all of its **data** from `04-mock-data.js`, but defined its own copies of the **rules**: `t()`, `started()`, `status()`, `buckets()`, `stats()` and the team sort. The self-check tested the copies in `04-mock-data.js`, not the ones the app ran, so an edit to one copy only would have made the app and the self-check silently disagree. **Resolved:** the app now calls `MOCK.helpers` for every rule, and `tests/check-single-source.js` fails the build if a copy reappears.
 
 ### 5.2 The requirement
 
@@ -193,7 +195,9 @@ The current helpers return IDs and assume the demo date. Extend them so the app 
 | `canRemove(emp, task)` | `{ ok: boolean, reason?: "hrRequired" \| "completed" }` | Based on `taskDefs[def].source === "hr"`, not `addedBy`. See open question 2. |
 | `lastActivity(emp, today)` | `{ kind: "justNow" \| "completed" \| "none", task, daysAgo }` | The view writes "Just now", "Yesterday", etc. |
 | `validateStore(obj)` | boolean | True if every employee in `employeeOrder` is present, every task's `def` exists in `taskDefs`, and there are no duplicates. Used when loading from `localStorage`. |
-| `addDays`, `diffDays`, `workdaysSince` | date utilities | Exported so `src/core/dates.js` doesn't redefine them. |
+| `findTask(emp, defId)`, `byDue(a, b)` | Task or `null`; sort comparator | Lookup and due-date ordering, so views don't re-implement them. |
+| `addDays`, `diffDays`, `workdaysSince`, `parseDate` | date utilities | Exported so `src/core/dates.js` doesn't redefine them. `parseDate` parses ISO strings as local dates. |
+| `fill(template, values)` | string | Fills `{name}` placeholders in copy. `src/ui/html.js` re-exports it. |
 
 `selfCheck()` keeps its current checks and switches to the new helpers where they replace inline logic (team order, starting next, default due).
 
@@ -201,7 +205,7 @@ The current helpers return IDs and assume the demo date. Extend them so the app 
 
 1. **One code path.** The app calls `MOCK.helpers` and has nothing of its own to drift.
 2. **Self-check on load.** `main.js` runs `MOCK.helpers.selfCheck()` once at boot. If it fails, it logs `console.warn("YFP self-check failed …")` with the failing lines. Nothing is shown to users.
-3. **Static check.** `node tests/check-single-source.js` scans `index.html` and `src/**/*.js` and fails if it finds a definition of any rule name (`status`, `buckets`, `stats`, `started`, `isStarted`, `teamOrder`, `teamAverage`, `catalogFor`, `defaultDue`, `canRemove`, `makeTask`, `t`). It also fails if any of them appears as a function declaration or assignment outside `04-mock-data.js`. About 30 lines, no dependencies.
+3. **Static check.** `node tests/check-single-source.js` scans `index.html` and `src/**/*.js` and fails if it finds a definition of any rule name (`status`, `buckets`, `stats`, `started`, `isStarted`, `teamOrder`, `teamAverage`, `catalogFor`, `defaultDue`, `canRemove`, `makeTask`, `t`, plus `stage`, `lastActivity`, `startingNext`, `validateStore`, `byDue`) as a function declaration, variable, assignment or object method outside `04-mock-data.js`. About 50 lines, no dependencies.
 
 ### 5.5 Rule reference
 
@@ -378,6 +382,8 @@ Because every render replaces the DOM, focus is restored by key. Focusable eleme
 
 ### 9.7 Moving from the prototype to this structure
 
+**Status: done.** All six steps below are complete; `public/index.html` now holds only the page shell and script tags.
+
 Do it in small steps and run the demo script (§10.2) after each one so the demo always works:
 
 0. Commit the current prototype as-is. Then move files into the §3 layout: docs and reference images into `docs/`, `index.html` and `04-mock-data.js` into `public/`. Create `README.md` (what YFP is, how to run locally, how to run the checks, how to deploy, links to `docs/`). Update the reading list and check commands in `CLAUDE.md`, and any file paths mentioned in the docs. Open `public/index.html` to confirm it still loads, and run `node public/04-mock-data.js`.
@@ -399,6 +405,8 @@ Do it in small steps and run the demo script (§10.2) after each one so the demo
 | `node tests/check-single-source.js` | No rule logic redefined outside `04-mock-data.js` (§5.4). |
 
 Both must pass before each deploy.
+
+**Browser suites** (`tests/browser/`, optional, no dependencies): `node tests/browser/run.mjs [--browser=edge]` drives the real app in headless Chrome or Edge over the DevTools protocol. Four suites: `employee` (§10.2 steps 1–2), `manager` (steps 3–9), `edge-cases` (§10.3 and §9.6, including storage blocked, corrupt data, the local-only fixture hook and a missing data file) and `polish` (§10.4 keyboard-only run, widths, 200% zoom, reduced motion, light-only theme, and an older-engine CSS check).
 
 ### 10.2 Demo script run-through
 
@@ -433,6 +441,7 @@ It isn't linked anywhere in the UI. Implementation: about 15 lines in `store.js`
 | Overdue task, Alex needs support | `?fixture=alexOverdue`, then `#task-alex-i9` |
 | Task removed while open | `?fixture=alexTaskRemoved`, then `#task-alex-photo` |
 | Catalog exhausted | `?fixture=alexCatalogExhausted`, then `#team-alex` → Add task |
+| Nothing addable (some items blocked as Pre-D1 after the start date) | `?fixture=chrisCatalogExhausted`, then `#team-chris` → Add task |
 | Locked task | `#task-alex-orientation` |
 | Catalog item unavailable | `#team-alex` and `#team-chris` → Add task |
 | Corrupt storage | Put `MOCK.fixtures.corruptStorage.raw` into `localStorage` under `yfp-demo-v2` and reload |
@@ -484,11 +493,15 @@ The app is a static folder (`public/`) with no build step. With the "Other" fram
 | `04-mock-data.js` is the single source for data **and** rules | This spec, §5 |
 | Plain HTML, CSS and JavaScript; no framework or build step | This spec, §2 |
 | Managers add only from the catalog; no custom tasks or templates | Brief, Stakeholder Assumptions; `02-user-flow.md` §6 |
+| Default due date when the catalog offset has passed: demo date + 2 days; fixtures call `defaultDue()` | Prototype behavior, confirmed |
+| A task is non-removable when its definition has `source === "hr"` (not `addedBy`), or when it's completed | `canRemove()`; matches the "HR-required tasks" rule |
+| `?fixture=` stays in the deployed build but only works locally (`file:`, `localhost`, `127.0.0.1`) and never saves | §10.3 |
+| "Mark as not done" is kept: it supports "update task status" in the brief | `01-pm-brief.md`, Employee Workflow |
+| Planning docs are not deployed; Vercel serves only `public/` | §11 |
+| Unknown task IDs (`#task-alex-nope`) show not-found; a real task that isn't in Alex's plan shows "This task isn't in your plan" | Reconciles `errorScenarios.unknownRoute` with §7 |
+| After removing a task, focus moves to the toast's Undo; when the toast closes, focus moves to `<main>` | §9.3 |
+| "Day 1" in sentences and labels; "D1" only in tags (Pre-D1, Post-D1) | `03-design-notes.md` §8 |
 
 ### Open
 
-1. **Default due date when the offset is in the past.** The prototype uses demo date + 2 days. The `alexCatalogExhausted` fixture uses the demo date itself. `defaultDue()` will follow the prototype (+2), and the fixture should be updated to call `defaultDue()`. Confirm +2 is the behavior you want.
-2. **What makes a task non-removable.** The prototype checks `addedBy === "hr"`. The rule says "HR-required tasks." `canRemove()` will check the task definition's `source === "hr"`. Results are identical for the current data; this only matters if HR tasks are ever added another way.
-3. **Fixture URL hook.** `?fixture=` (§10.3) is for testing only. Keep it in the deployed build, or strip it before sharing?
-4. **"Mark as not done" (reopen).** The prototype lets Alex reopen a completed task. It supports "update task status" in the brief, but isn't in the demo script. Keep it?
-5. **Public docs on Vercel.** Serve the planning docs alongside the app, or exclude them (§11)?
+None at the moment.
