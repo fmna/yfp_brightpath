@@ -406,7 +406,7 @@ Do it in small steps and run the demo script (§10.2) after each one so the demo
 
 Both must pass before each deploy.
 
-**Browser suites** (`tests/browser/`, optional, no dependencies): `node tests/browser/run.mjs [--browser=edge]` drives the real app in headless Chrome or Edge over the DevTools protocol. Four suites: `employee` (§10.2 steps 1–2), `manager` (steps 3–9), `edge-cases` (§10.3 and §9.6, including storage blocked, corrupt data, the local-only fixture hook and a missing data file) and `polish` (§10.4 keyboard-only run, widths, 200% zoom, reduced motion, light-only theme, and an older-engine CSS check).
+**Browser suites** (`tests/browser/`, optional, no dependencies): `node tests/browser/run.mjs [--browser=edge]` drives the real app in headless Chrome or Edge over the DevTools protocol. Four suites: `employee` (§10.2 steps 1–2), `manager` (steps 3–9), `edge-cases` (§10.3 and §9.6, including storage blocked, corrupt data, the fixture hook and its notice on a non-local host, and a missing data file) and `polish` (§10.4 keyboard-only run, widths, 200% zoom, reduced motion, light-only theme, and an older-engine CSS check).
 
 ### 10.2 Demo script run-through
 
@@ -428,11 +428,11 @@ Start from **Reset demo**. Expected values come from `MOCK.expected`.
 
 Use the fixtures in `04-mock-data.js` to check every state in `02-user-flow.md` §5.5. To load one in the browser, open the app with `?fixture={name}` (e.g. `index.html?fixture=alexAllCaughtUp`).
 
-This is a **test-only hook** with two limits:
-- **Local only.** It works only when the app runs on your own computer (`location.protocol === "file:"` or the host is `localhost` / `127.0.0.1`). On the deployed Vercel site the parameter is ignored.
-- **Never saved.** Fixture state lives in memory only. `save()` is a no-op while a fixture is loaded, so reloading without the parameter returns to the normal saved state, and the reviewer's saved demo is never overwritten.
+The hook works on any host, including the deployed Vercel site, so reviewers can open these states from the link alone. Two rules:
+- **Never saved.** Fixture state lives in memory only. `save()` is a no-op while a fixture is loaded, so opening the URL without the parameter returns to the normal saved state, and the reviewer's saved demo is never overwritten. Unknown names are ignored.
+- **Always labeled.** While a fixture is loaded, a slim neutral notice sits under the top bar: "Showing a sample state: {label}. Changes aren't saved." with a **Back to the demo** link to the page without the query string. Each fixture's `label` and the notice copy (`MOCK.fixtureNotice`) live in `04-mock-data.js`.
 
-It isn't linked anywhere in the UI. Implementation: about 15 lines in `store.js` at boot (read `URLSearchParams`, check the host, call `MOCK.fixtures[name].build()`, set a `fixtureMode` flag).
+Implementation: `loadFixture()` in `store.js` at boot (read `URLSearchParams`, call `MOCK.fixtures[name].build()`, set a `fixtureMode` flag); the notice is rendered by `views/topbar.js`.
 
 | State | How to see it |
 |---|---|
@@ -474,11 +474,11 @@ The app is a static folder (`public/`) with no build step. With the "Other" fram
 - Open `/` and confirm the app loads.
 - Open `/01-pm-brief.md` and `/docs/01-pm-brief.md` and confirm both return **404**, so the docs aren't public. If either loads, set Output Directory to `public` in Project Settings and redeploy.
 - Open `/#team-chris` directly to confirm deep links work. Hash routes need no rewrites.
-- Open `/?fixture=alexOverdue` and confirm it's ignored (normal demo state).
+- Open `/?fixture=alexOverdue` and confirm it loads, shows the notice, and the plain URL still shows your saved demo.
 - Click **Reset demo** before presenting, because each browser keeps its own saved state.
 - Leave Vercel Analytics and Speed Insights off (analytics are out of scope).
 
-**Running locally.** Double-click `public/index.html`, or run `npx serve public` and open the address it prints. Either way counts as local, so the `?fixture=` hook works.
+**Running locally.** Double-click `public/index.html`, or run `npx serve public` and open the address it prints. The `?fixture=` hook works the same locally as on the deployed site.
 
 ---
 
@@ -495,7 +495,7 @@ The app is a static folder (`public/`) with no build step. With the "Other" fram
 | Managers add only from the catalog; no custom tasks or templates | Brief, Stakeholder Assumptions; `02-user-flow.md` §6 |
 | Default due date when the catalog offset has passed: demo date + 2 days; fixtures call `defaultDue()` | Prototype behavior, confirmed |
 | A task is non-removable when its definition has `source === "hr"` (not `addedBy`), or when it's completed | `canRemove()`; matches the "HR-required tasks" rule |
-| `?fixture=` stays in the deployed build but only works locally (`file:`, `localhost`, `127.0.0.1`) and never saves | §10.3 |
+| `?fixture=` works on any host, including the deployed site, so reviewers can see every state from the link; it shows a sample-state notice and never saves | §10.3 |
 | "Mark as not done" is kept: it supports "update task status" in the brief | `01-pm-brief.md`, Employee Workflow |
 | Planning docs are not deployed; Vercel serves only `public/` | §11 |
 | Unknown task IDs (`#task-alex-nope`) show not-found; a real task that isn't in Alex's plan shows "This task isn't in your plan" | Reconciles `errorScenarios.unknownRoute` with §7 |

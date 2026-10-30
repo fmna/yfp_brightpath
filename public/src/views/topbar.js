@@ -1,9 +1,10 @@
 /* YFP · views/topbar.js
- * Brand, demo date, role switcher ("View as") and Reset demo. Every screen. */
+ * Brand, demo date, role switcher ("View as") and Reset demo. Every screen.
+ * Plus the sample-state notice under it while a ?fixture= is loaded. */
 (function (YFP) {
   "use strict";
   if (!YFP.MOCK) return;
-  var MOCK = YFP.MOCK, esc = YFP.html.esc, avatar = YFP.components.avatar;
+  var MOCK = YFP.MOCK, esc = YFP.html.esc, fill = YFP.html.fill, avatar = YFP.components.avatar;
 
   var SWITCH_LABEL = { alex: "New hire", morgan: "Manager" };
 
@@ -20,7 +21,16 @@
       '<span class="demo-date" title="The prototype runs on a fixed date so the demo is repeatable">Demo date: ' + YFP.dates.fmtYear(MOCK.demo.today) + '</span>' +
       '<div class="switcher" role="group" aria-label="View as"><span class="switcher-label" aria-hidden="true">View as</span><div class="seg">' + options + '</div></div>' +
       '<button type="button" class="link-btn" data-action="reset" data-fkey="reset">Reset demo</button>' +
-    '</div></header>';
+    '</div></header>' + fixtureNotice();
+  }
+
+  // The link drops the query and the hash, so it lands on the reviewer's saved demo.
+  function fixtureNotice() {
+    var name = YFP.store.fixtureName();
+    if (!name) return "";
+    var copy = MOCK.fixtureNotice;
+    return '<div class="fixture-note"><div class="wrap"><p>' + esc(fill(copy.body, { label: MOCK.fixtures[name].label })) +
+      ' <a href="' + esc(location.pathname) + '" data-fkey="fixture-back">' + esc(copy.back) + '</a></p></div></div>';
   }
 
   YFP.views = YFP.views || {};

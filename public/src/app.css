@@ -48,6 +48,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 .seg small{font-weight:500;color:var(--ink-3);font-size:.75rem}
 .link-btn{border:0;background:none;color:var(--ink-3);font-size:.8rem;text-decoration:underline;text-underline-offset:3px;padding:4px}
 .link-btn:hover{color:var(--ink)}
+/* Sample-state notice (?fixture=), under the top bar. Neutral on purpose: it's context, not an alert. */
+.fixture-note{background:var(--surface-2);border-bottom:1px solid var(--line);color:var(--ink-2);font-size:.85rem}
+.fixture-note .wrap{padding-block:7px}
+.fixture-note a{color:var(--brand-strong);font-weight:600;text-underline-offset:3px;white-space:nowrap}
+.fixture-note a:hover{color:var(--ink)}
 
 /* Avatars */
 .av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:.72rem;font-weight:700;flex:none;font-family:var(--font-display)}

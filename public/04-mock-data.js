@@ -542,9 +542,16 @@
   /* ---------------------------------------------------------------------------
    * 11. Fixtures: alternate starting states for showing the states above.
    *     Each returns a fresh copy of the store. Not used by the main demo.
+   *     `label` is the reviewer-facing wording shown in the sample-state notice.
    * ------------------------------------------------------------------------ */
+  var FIXTURE_NOTICE = {
+    body: "Showing a sample state: {label}. Changes aren’t saved.",
+    back: "Back to the demo"
+  };
+
   var FIXTURES = {
     alexAllCaughtUp: {
+      label: "Alex has finished every task due before Day 1",
       description: "All of Alex's Pre-D1 tasks done; only locked Post-D1 remain (6/11 = 55%)",
       build: function () {
         var s = seed();
@@ -553,6 +560,7 @@
       }
     },
     alexFreshStart: {
+      label: "Alex hasn’t completed any tasks yet",
       description: "Alex has done nothing yet (0/11 = 0%); Done column empty. " +
         "Offer letter and Welcome video are then overdue, so Alex shows as Needs support.",
       build: function () {
@@ -562,6 +570,7 @@
       }
     },
     alexOverdue: {
+      label: "Alex’s I-9 is overdue, so Alex needs support",
       description: "Alex's I-9 was due Oct 28 and is still open → Alex needs support",
       build: function () {
         var s = seed();
@@ -570,6 +579,7 @@
       }
     },
     alexTaskRemoved: {
+      label: "Alex’s badge photo task was removed from the plan",
       description: "Badge photo (HR task) removed from the data to simulate a stale link",
       build: function () {
         var s = seed();
@@ -578,6 +588,7 @@
       }
     },
     alexCatalogExhausted: {
+      label: "every catalog task is already in Alex’s plan",
       description: "Every catalog item is in Alex's plan; Add task shows the empty state",
       build: function () {
         var s = seed();
@@ -590,6 +601,7 @@
       }
     },
     chrisCatalogExhausted: {
+      label: "nothing in the catalog can be added for Chris",
       description: "Every catalog item Chris can still get is in the plan; only Pre-D1 items remain, which can't be added after the start date",
       build: function () {
         var s = seed();
@@ -861,6 +873,7 @@
     eq("fixture.chrisExhausted", [cx.available.length, cx.unavailable.orgchart], [0, "preAfterStart"]);
     var corruptOk = false; try { JSON.parse(FIXTURES.corruptStorage.raw); } catch (e) { corruptOk = true; }
     eq("fixture.corrupt", corruptOk, true);
+    eq("fixture.labels", Object.keys(FIXTURES).filter(function (k) { return FIXTURES[k].build && !FIXTURES[k].label; }), []);
     eq("validateStore.rejects", [validateStore(null), validateStore({ alex: s.alex }), validateStore({ alex: { id: "alex", start: "2026-11-02", tasks: [{ def: "nope", due: "2026-11-01", done: false }] }, brooke: s.brooke, chris: s.chris })], [false, false, false]);
     eq("seed is fresh each call", stats(seed().alex).pct, 18);
 
@@ -883,6 +896,7 @@
     errorScenarios: ERROR_SCENARIOS,
     toasts: TOASTS,
     fixtures: FIXTURES,
+    fixtureNotice: FIXTURE_NOTICE,
     helpers: {
       // Rules
       makeTask: makeTask, findTask: find, isStarted: isStarted, status: status, byDue: byDue, buckets: buckets,

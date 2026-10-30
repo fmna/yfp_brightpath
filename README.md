@@ -40,7 +40,7 @@ node tests/browser/run.mjs --browser=edge   # Edge
 node tests/browser/run.mjs employee         # one suite: employee | manager | edge-cases | polish
 ```
 
-To see a specific state locally, open the app with `?fixture=<name>`, e.g. `public/index.html?fixture=alexAllCaughtUp`. Fixture names are in `public/04-mock-data.js` §11; the list of states is in [docs/05-build-spec.md](docs/05-build-spec.md) §10.3. This only works on your own machine and never overwrites your saved demo.
+To see a specific state, open the app with `?fixture=<name>`, e.g. `public/index.html?fixture=alexAllCaughtUp` locally or `/?fixture=alexAllCaughtUp` on the deployed site. Fixture names are in `public/04-mock-data.js` §11; the list of states is in [docs/05-build-spec.md](docs/05-build-spec.md) §10.3. A notice under the top bar says which sample state is showing, with a link back to the demo. Fixture changes are never saved, so your saved demo is never overwritten.
 
 ## Deploy (Vercel)
 

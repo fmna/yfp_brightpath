@@ -77,14 +77,44 @@ export default async function (p) {
   p.eq("storage untouched", await p.eval("localStorage.getItem('yfp-demo-v2')"), null);
   await p.open(p.APP + "#home");
   p.eq("normal state after leaving fixture", await p.text(".ring-num"), "18%");
+  p.eq("no sample-state notice without a fixture", await p.eval("!!document.querySelector('.fixture-note')"), false);
 
-  p.section("Fixture hook: local only");
+  p.section("Fixture hook: works on any host, shows the notice, never overwrites saved state");
   await p.open(p.LOCAL + "?fixture=alexAllCaughtUp#home");
   p.eq("honored on 127.0.0.1", await p.text(".ring-num"), "55%");
+  // REMOTE is its own origin, so it gets its own saved demo: complete one task there first.
+  await p.open(p.REMOTE + "#home");
+  await p.eval("localStorage.clear()");
+  await p.open(p.REMOTE + "#home");
+  await p.click('[data-fkey="next"]');
+  await p.click('[data-action="complete"]');
+  p.eq("saved demo on a non-local host", await p.text(".ring-num"), "27%");
+  const saved = await p.eval("localStorage.getItem('yfp-demo-v2')");
   await p.open(p.REMOTE + "?fixture=alexAllCaughtUp#home");
-  p.eq("ignored on a non-local host", await p.text(".ring-num"), "18%");
+  p.eq("honored on a non-local host", await p.text(".ring-num"), "55%");
+  p.eq("notice text", await p.text(".fixture-note"), "Showing a sample state: Alex has finished every task due before Day 1. Changes aren’t saved. Back to the demo");
+  p.eq("back link drops the query and hash", await p.eval("document.querySelector('.fixture-note a').getAttribute('href')"), "/");
+  await p.shot("m3-00-fixture-notice");
+  await p.hash("#team");
+  p.ok("notice on manager views too", await p.eval("!!document.querySelector('.fixture-note')"));
+  await p.open(p.REMOTE + "?fixture=alexFreshStart#home");
+  await p.click('[data-fkey="next"]');
+  await p.click('[data-action="complete"]');
+  p.eq("fixture change works in memory", await p.text(".ring-num"), "9%");
+  p.eq("saved demo untouched", await p.eval("localStorage.getItem('yfp-demo-v2')"), saved);
+  await p.click('[data-fkey="fixture-back"]');
+  for (let i = 0; i < 40; i++) {
+    await wait(100);
+    try { if (await p.eval("!location.search && document.readyState==='complete' && !!document.querySelector('#app main')")) break; } catch {}
+  }
+  p.eq("back link lands on the plain URL", await p.eval("location.search + location.hash"), "");
+  p.eq("back to the saved demo", await p.text(".ring-num"), "27%");
+  p.eq("notice gone", await p.eval("!!document.querySelector('.fixture-note')"), false);
   await p.open(p.REMOTE + "?fixture=nope#home");
-  p.eq("unknown fixture ignored", await p.text(".ring-num"), "18%");
+  p.eq("unknown fixture ignored", await p.text(".ring-num"), "27%");
+  p.eq("no notice for unknown fixture", await p.eval("!!document.querySelector('.fixture-note')"), false);
+  await p.open(p.REMOTE + "?fixture=corruptStorage#home");
+  p.eq("non-buildable fixture ignored", await p.eval("!!document.querySelector('.fixture-note')"), false);
 
   p.section("Unknown routes");
   for (const h of ["#settings", "#team-dana", "#task-alex-nope", "#task-brooke-i9", "#team-", "#task-"]) {

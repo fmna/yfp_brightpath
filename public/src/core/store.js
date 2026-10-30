@@ -7,20 +7,19 @@
   var MOCK = YFP.MOCK, H = MOCK.helpers, TODAY = MOCK.demo.today, KEY = MOCK.demo.storageKey;
   var ORDER = MOCK.employeeOrder, DEFS = MOCK.taskDefs, TOASTS = MOCK.toasts, fill = YFP.html.fill;
 
-  var fixtureMode = false;
+  var fixtureMode = false, fixtureName = null;
   var toastTimer = null;
 
   /* ----- Load and save (05-build-spec §6.2) ----- */
 
-  // Test-only hook: ?fixture=name, honored only when running locally, never saved.
+  // Sample-state hook: ?fixture=name, honored on any host, never saved.
   function loadFixture() {
     try {
       var name = new URLSearchParams(location.search).get("fixture");
-      if (!name) return null;
-      var local = location.protocol === "file:" || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+      if (!name || !Object.prototype.hasOwnProperty.call(MOCK.fixtures, name)) return null;
       var fx = MOCK.fixtures[name];
-      if (!local || !fx || typeof fx.build !== "function") return null;
-      fixtureMode = true;
+      if (typeof fx.build !== "function") return null;
+      fixtureMode = true; fixtureName = name;
       return fx.build();
     } catch (e) { return null; }
   }
@@ -142,6 +141,7 @@
     ui: freshUi(),
     onChange: function () {},   // main.js sets this to render()
     isFixture: function () { return fixtureMode; },
+    fixtureName: function () { return fixtureName; },
     findTask: findTask, taskId: taskId,
     completeTask: completeTask, reopenTask: reopenTask, addTask: addTask, removeTask: removeTask,
     undo: undo, reset: reset, dismissToast: dismissToast, setToast: setToast, clearNewFlags: clearNewFlags
