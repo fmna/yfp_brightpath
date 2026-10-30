@@ -407,7 +407,7 @@
   };
 
   /* ---------------------------------------------------------------------------
-   * 9. Empty states (02-user-flow §5.5). Copy matches index.html.
+   * 9. Empty states (02-user-flow §5.5). The views in src/ read this copy.
    * ------------------------------------------------------------------------ */
   var EMPTY_STATES = {
     doTodayEmpty: {

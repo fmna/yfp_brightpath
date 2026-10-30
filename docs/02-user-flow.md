@@ -16,7 +16,7 @@ Everything else in the prototype supports that loop or the MVP success criteria.
 
 ## 2. Demo setup
 
-The prototype runs on a fixed **demo date: Friday, Oct 30, 2026**, so it behaves the same every time it is shown. All data is mock data and stays in the browser. **Reset demo** in the top bar restores the starting state.
+The prototype runs on a fixed **demo date: Friday, Oct 30, 2026**, so it behaves the same every time it is shown. All data is mock data and stays in the browser. **Reset demo** in the top bar restores the starting state. Links with `?fixture=<name>` open prepared sample states (e.g. an overdue task); they are labeled with a notice and never saved.
 
 | Persona | Role | Start date | Situation on demo date | Status |
 |---|---|---|---|---|
@@ -137,6 +137,7 @@ Information order, top to bottom:
 | Task removed while open | Task Detail | "This task isn't in your plan" with a way back. |
 | Bad link / unknown page | Any | Friendly not-found screen with a button to a valid screen. |
 | Undo | Complete, remove | Toast with **Undo** for 7 seconds. |
+| Sample state | Every screen | Opened from a `?fixture=` link. A neutral notice under the top bar names the state ("Showing a sample state: … Changes aren't saved.") with a **Back to the demo** link. Changes last only until the page is left; the saved demo is never overwritten. |
 
 ---
 

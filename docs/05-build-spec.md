@@ -92,7 +92,7 @@ public/
 │   │   ├── html.js            esc() and small HTML helpers
 │   │   └── components.js      Tags, task card, ring, progress bar, status pill, avatar, toast, empty state
 │   ├── views/
-│   │   ├── topbar.js          Brand, demo date, role switcher, Reset demo
+│   │   ├── topbar.js          Brand, demo date, role switcher, Reset demo, sample-state notice
 │   │   ├── employee-home.js   Employee Dashboard (#home)
 │   │   ├── task-panel.js      Task Detail side panel (#task-…)
 │   │   ├── manager-team.js    Manager Dashboard (#team)
@@ -146,7 +146,8 @@ All of this already exists in `04-mock-data.js`. The build reads it through `win
 | `taskDefs` | `{ [defId]: { title, timing: "pre"\|"post", type: "ar"\|"review", source: "hr"\|"cat", offset?, desc, steps[], link: { label, url, src } } }` | What a task *is*. Shared by every employee who has it. |
 | `catalog` | 10 `defId`s in dialog order | The Add task dialog. |
 | `seed()` | Returns a **fresh** store: `{ alex, brooke, chris }`, each `{ id, name, first, initials, role, dept, start, tasks: Assignment[] }` | Starting state and Reset demo. |
-| `expected`, `demoScript`, `emptyStates`, `errorScenarios`, `fixtures` | See file | Tests, demo rehearsal, state checks. |
+| `expected`, `demoScript`, `emptyStates`, `errorScenarios`, `fixtures` | See file | Tests, demo rehearsal, state checks. Each buildable fixture has a reviewer-facing `label`. `errorScenarios.dueDateOutOfRange` holds the due-date hint and error copy. |
+| `fixtureNotice` | `{ body, back }` | Copy for the sample-state notice under the top bar (§10.3). |
 | `toasts` | `{ completed, reopened, added, removed, prototypeLink, reset }` templates | Toast copy for store mutations. The self-check fills them and compares with `expected`. |
 | `helpers` | Rule functions (§5) | **Every** rule decision in the app. |
 
@@ -171,7 +172,7 @@ The original single-file prototype loaded all of its **data** from `04-mock-data
 
 ### 5.2 The requirement
 
-**Every rule decision in the app comes from `MOCK.helpers`.** No file under `src/` or inline in `index.html` may compute task status, buckets, progress, needs-support status, stage, team order, catalog availability, default due dates or removability on its own.
+**Every rule decision in the app comes from `MOCK.helpers`.** No file under `src/` or inline in `index.html` may compute task status, buckets, progress, needs-support status, stage, team order, catalog availability, default or allowed due dates, or removability on its own.
 
 `src/` may only add **presentation**: wording ("Due tomorrow", "Overdue by 2 days", "3 days ago"), date formatting, icons and CSS classes. These are built *from* rule outputs, never instead of them.
 
@@ -234,7 +235,7 @@ The rules themselves are unchanged from `02-user-flow.md` §6 and `04-mock-data.
 | State | Lives in | Persisted | Contents |
 |---|---|---|---|
 | **Store** (domain) | `YFP.store.data` | Yes, in `localStorage[demo.storageKey]` | `{ alex, brooke, chris }` with their tasks, as produced by `seed()` |
-| **UI state** | `YFP.store.ui` | No | `{ confirmRemove: taskId \| null, addOpen: bool, pick: defId \| null, due: ISO, toast: { msg, undo } \| null }` |
+| **UI state** | `YFP.store.ui` | No | `{ confirmRemove: taskId \| null, addOpen: bool, pick: defId \| null, due: ISO, dueErr: "empty" \| "beforeMin" \| "afterMax" \| null, toast: { msg, undo } \| null }` |
 | **Route** | `location.hash` | In the URL | Which screen, persona, task or employee |
 
 There is **no cached derived state**. Progress, buckets, status and team averages are recomputed from the store on every render through `MOCK.helpers`. That's what makes the manager view update immediately. Both views read the same object, so there is nothing to sync.
@@ -260,7 +261,7 @@ All changes go through these functions in `store.js`. Each one changes `data`, c
 |---|---|---|
 | `completeTask(taskId)` | `done = true`, `doneOn = today`, clears `justNow` on all tasks, sets `justNow` on this one | "Task completed. Your progress went from 18% to 27%." **Undo** |
 | `reopenTask(taskId)` | `done = false`, `doneOn = null`, `justNow = false`. Lets the employee correct a task marked done by mistake, after the Undo toast is gone. | "Marked as not done." |
-| `addTask(empId, defId, due)` | Checks `catalogFor`, clamps `due` to ≥ today, pushes `makeTask(defId, due, null, "morgan")` with `isNew = true` | "Added “Review the org chart” to Alex’s plan." |
+| `addTask(empId, defId, due)` | Checks `catalogFor` and `dueError`. **Rejects** an empty or out-of-range `due`: returns `false` and adds nothing (the date is never clamped or changed). Otherwise pushes `makeTask(defId, due, null, "morgan")` with `isNew = true` and returns `true`. `main.js` checks `dueError` first so it can show the inline error; the store check is the backstop. | "Added “Review the org chart” to Alex’s plan." (only when added) |
 | `removeTask(taskId)` | Checks `canRemove`, removes it, remembers its index | "Removed “Review the org chart” from Alex’s plan." **Undo** (puts it back at the same index) |
 | `undo()` | Runs the undo function stored with the current toast, then clears the toast | none |
 | `reset()` | `data = MOCK.seed()`, clear UI state, save | "Demo data reset to the starting state." |
@@ -308,7 +309,7 @@ Visual specs are in `03-design-notes.md` §6. This table covers inputs and behav
 
 | Component | File | Inputs | States | Accessibility |
 |---|---|---|---|---|
-| Top bar | `views/topbar.js` | route | Persona active; not-found (no active persona) | Sticky. Switcher is a `group` with `aria-pressed` per option. |
+| Top bar | `views/topbar.js` | route | Persona active; not-found (no active persona); sample state (notice under the bar with **Back to the demo**) | Sticky. Switcher is a `group` with `aria-pressed` per option. |
 | Role switcher | `views/topbar.js` | active persona | Alex / Morgan | One click, no login. Lands on that persona's home. |
 | Tags | `ui/components.js` | `defId` | Pre-D1 / Post-D1, then Action required / Review, always in that order | Text labels, not color alone |
 | Task card | `ui/components.js` | emp, task | Do today / Do later / Done / Locked; "Just completed" | Whole card is a `<button>`. Due line pairs icon + words. |
@@ -321,11 +322,11 @@ Visual specs are in `03-design-notes.md` §6. This table covers inputs and behav
 | Attention callout | `views/manager-team.js` | stats | One per person needing support | Icon + bold name + overdue count + oldest overdue task |
 | Progress table | `views/manager-team.js` | `teamOrder` | Rows sorted by rule; "Just now" in green | Rows are buttons. Header cells use `scope`. |
 | Plan table | `views/employee-detail.js` | emp | Pre-D1 / Post-D1 groups; inline remove confirmation row | "Required by HR" marker with tooltip in place of a trash icon |
-| Catalog dialog | `views/add-task-dialog.js` | emp, `catalogFor`, ui.pick | Available first; unavailable dimmed with reason; exhausted empty state | `radiogroup`, Esc closes, focus on title, due-date `min` = demo date |
+| Catalog dialog | `views/add-task-dialog.js` | emp, `catalogFor`, `dueRange`, ui.pick, ui.dueErr | Available first; unavailable dimmed with reason; exhausted empty state; due date with a one-line hint; invalid date (inline error, dialog stays open) | `radiogroup`, Esc closes, focus on title. Due-date `min`/`max` from `dueRange`. Error has `role="alert"`; the input gets `aria-invalid` and `aria-describedby` pointing at the hint and error; focus moves to the field. |
 | Toast | `ui/components.js` | ui.toast | With / without Undo | `role="status"` (announced). Undo and Dismiss buttons. |
 | Empty state | `ui/components.js` | title, body | Copy from `MOCK.emptyStates` | Plain text in a dashed box |
 
-**Copy source.** Empty states, error screens, toasts and notices use the strings in `MOCK.emptyStates` and `MOCK.errorScenarios` so copy has one source. Fill `{first}`, `{n}` and `{startDate}` placeholders with a small `fill(template, values)` helper in `ui/html.js`.
+**Copy source.** Empty states, error screens, toasts and notices use the strings in `MOCK.emptyStates`, `MOCK.errorScenarios` and `MOCK.fixtureNotice` so copy has one source. Fill `{first}`, `{n}`, `{startDate}`, `{start}`, `{today}`, `{min}`, `{max}` and `{label}` placeholders with a small `fill(template, values)` helper in `ui/html.js`.
 
 ---
 
@@ -339,7 +340,7 @@ Visual specs are in `03-design-notes.md` §6. This table covers inputs and behav
 | Task Detail | Tags → title → notice (overdue / locked) → due, assigned by, type → About → How to complete it (resource link, then numbered steps) → footer with one primary action | `status`, `isStarted` |
 | Manager Dashboard | Heading → tiles (Need support, Average progress, Starting next) → attention callouts → progress table | `teamOrder`, `teamAverage`, `startingNext`, `stats`, `stage`, `lastActivity` |
 | Employee Detail | Breadcrumb → header (identity, stage, status, progress, overdue count, Add task) → plan table grouped Pre-D1 / Post-D1 | `stats`, `stage`, `status`, `canRemove` |
-| Add task dialog | Catalog list → fixed footer (due date, Cancel, "Add to {first}’s plan") | `catalogFor`, `defaultDue` |
+| Add task dialog | Catalog list → fixed footer (due date with hint and any inline error, Cancel, "Add to {first}’s plan") | `catalogFor`, `defaultDue`, `dueRange`, `dueError`, `isStarted` |
 
 The bucket order on the board is **Do today, Do later, Done**, matching the brief.
 
@@ -349,6 +350,7 @@ The bucket order on the board is **Do today, Do later, Done**, matching the brie
 - One delegated `click` listener, one `change` listener and one `keydown` listener sit on `document`. Elements declare intent with `data-action` (e.g. `complete`, `open-task`, `remove-confirm`) plus `data-id`, `data-emp` and similar attributes.
 - Actions in use: `role`, `open-task`, `close-drawer`, `complete`, `reopen`, `open-hire`, `back-team`, `go`, `remove-ask`, `remove-cancel`, `remove-confirm`, `add-open`, `add-close`, `add-submit`, `demo-link`, `reset`, `toast-undo`, `toast-close`.
 - Resource links never navigate. They show the prototype-link toast.
+- `add-submit` with an empty or out-of-range date sets `ui.dueErr` and re-renders with the dialog still open; nothing is added. Picking another catalog item or closing the dialog clears the error.
 
 ### 9.3 Focus management
 
@@ -357,7 +359,8 @@ Because every render replaces the DOM, focus is restored by key. Focusable eleme
 1. Panel or dialog just opened → focus its title.
 2. Panel just closed → focus the element that opened it (fallback: Next up button).
 3. Inline remove confirmation opened → focus "Remove task". Cancelled → focus that row's trash button.
-4. Otherwise → focus whatever had the same `data-fkey` before the render.
+4. Add submitted with an invalid due date → focus the due-date field (its error is announced).
+5. Otherwise → focus whatever had the same `data-fkey` before the render.
 
 ### 9.4 Dates
 
@@ -403,12 +406,12 @@ Do it in small steps and run the demo script (§10.2) after each one so the demo
 
 | Command | Checks |
 |---|---|
-| `node public/04-mock-data.js` | Data integrity, default due dates, every persona's expected numbers, the demo script steps (complete → add → remove), fixtures. Exit code 0 means pass. |
+| `node public/04-mock-data.js` | Data integrity, default due dates, allowed due-date ranges (Alex pre-start, Brooke on Day 1, Chris started, and a start date of tomorrow), every persona's expected numbers, the demo script steps (complete → add → remove), fixtures. Exit code 0 means pass. |
 | `node tests/check-single-source.js` | No rule logic redefined outside `04-mock-data.js` (§5.4). |
 
 Both must pass before each deploy.
 
-**Browser suites** (`tests/browser/`, optional, no dependencies): `node tests/browser/run.mjs [--browser=edge]` drives the real app in headless Chrome or Edge over the DevTools protocol. Four suites: `employee` (§10.2 steps 1–2), `manager` (steps 3–9), `edge-cases` (§10.3 and §9.6, including storage blocked, corrupt data, the fixture hook and its notice on a non-local host, and a missing data file) and `polish` (§10.4 keyboard-only run, widths, 200% zoom, reduced motion, light-only theme, and an older-engine CSS check).
+**Browser suites** (`tests/browser/`, optional, no dependencies): `node tests/browser/run.mjs [--browser=edge]` drives the real app in headless Chrome or Edge over the DevTools protocol. Four suites: `employee` (§10.2 steps 1–2), `manager` (steps 3–9), `edge-cases` (§10.3 and §9.6, including storage blocked, corrupt data, the fixture hook and its notice on a non-local host, due-date validation in the Add task dialog, and a missing data file) and `polish` (§10.4 keyboard-only run, widths, 200% zoom, reduced motion, light-only theme, and an older-engine CSS check).
 
 ### 10.2 Demo script run-through
 
@@ -496,7 +499,8 @@ The app is a static folder (`public/`) with no build step. With the "Other" fram
 | `04-mock-data.js` is the single source for data **and** rules | This spec, §5 |
 | Plain HTML, CSS and JavaScript; no framework or build step | This spec, §2 |
 | Managers add only from the catalog; no custom tasks or templates | Brief, Stakeholder Assumptions; `02-user-flow.md` §6 |
-| Default due date when the catalog offset has passed: demo date + 2 days; fixtures call `defaultDue()` | Prototype behavior, confirmed |
+| Default due date when the catalog offset has passed: demo date + 2 days, then kept inside `dueRange`; fixtures call `defaultDue()` | Prototype behavior, confirmed |
+| Due dates outside the task's timing range (Pre-D1 before Day 1, Post-D1 from Day 1, never before the demo date) are rejected with an inline error, never clamped | `02-user-flow.md` §6; `dueRange()`, `dueError()` |
 | A task is non-removable when its definition has `source === "hr"` (not `addedBy`), or when it's completed | `canRemove()`; matches the "HR-required tasks" rule |
 | `?fixture=` works on any host, including the deployed site, so reviewers can see every state from the link; it shows a sample-state notice and never saves | §10.3 |
 | "Mark as not done" is kept: it supports "update task status" in the brief | `01-pm-brief.md`, Employee Workflow |

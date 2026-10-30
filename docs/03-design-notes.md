@@ -45,11 +45,13 @@ The prototype uses a **light theme only**, matching the light look of both refer
 |---|---|---|
 | Done / On track | Green `--brand` on `--brand-soft #E5F2E8` | Done column, status pill, completion toast |
 | Act soon | Orange `--mango-ink #8F4A07` on `--mango-soft #FDEFE0` | Do today column, due-soon dates |
-| Overdue / Needs support | Red `--danger #B42318` on `--danger-soft #FCEBE9` | Overdue dates, Needs support pill, manager callout, at-risk progress bar |
+| Overdue / Needs support | Red `--danger #B42318` on `--danger-soft #FCEBE9` | Overdue dates, Needs support pill, manager callout, at-risk progress bar; form errors (invalid due date) |
 | Locked / Post-D1 | Slate blue `#36608F` on `#E6EEF8` | Post-D1 tag, locked notice |
 | Review | Lavender `#5E4AA8` on `#EEEAF9` | Review tag, Do later column tint |
 
 **Rule:** red appears only when something is late. A manager scanning the page should be able to find every problem by looking for red alone.
+
+**Exception: form errors.** An inline validation error (e.g. an invalid due date in the Add task dialog) is also red, because red is the convention users expect for "this input can't be accepted". It appears only inside the open dialog, next to the field, with an icon and words, so it never competes with the lateness signals on the page.
 
 ---
 
@@ -88,9 +90,10 @@ Both load from Google Fonts with system-font fallbacks.
 | **Task Detail panel** | 480px right-side panel over a dimmed page. Header → content → a footer with one full-width primary action that stays in view. |
 | **Resource link** | In Task Detail, directly under "How to complete it". Full-width card with a light green fill and green outline: link icon, bold link label (e.g. "Watch Welcome to BrightPath (12 min)"), then source system and address in small grey text, plus an external-link icon. It is the most prominent element after the primary action, so the place to *do* the task is never hunted for. **Locked state** (Post-D1 tasks before Day 1): grey fill and border, lock icon, "Link available on Mon, Nov 2". The real link label and address are hidden, and the card can't be clicked. |
 | **Attention callout** | Soft red band naming the person, the overdue count and the oldest overdue task, with a secondary "Review plan" button. |
-| **Catalog dialog** | Radio-card list (selected = green outline + tint). Unavailable items are dimmed and say why. The due date and buttons are in a fixed footer so they stay in view. |
+| **Catalog dialog** | Radio-card list (selected = green outline + tint). Unavailable items are dimmed and say why. The due date, a one-line grey hint stating the allowed range, any inline error (red, icon + words, see §3 exception) and the buttons are in a fixed footer so they stay in view. |
 | **Toast** | Dark, bottom-center, with an **Undo** link. Confirms what changed in plain words ("Your progress went from 18% to 27%"). |
 | **Empty state** | Dashed outline box with a short bold line and one sentence of guidance. |
+| **Sample-state notice** | Shown only when a `?fixture=` link is open. A slim, neutral grey band under the top bar with muted small text naming the state, and a green "Back to the demo" link. Deliberately quiet so it labels the state without looking like an app error. |
 
 ---
 
