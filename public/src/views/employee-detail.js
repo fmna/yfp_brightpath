@@ -25,8 +25,8 @@
         '<span class="faint" aria-hidden="true">/</span><span aria-current="page">' + esc(emp.name) + '</span></nav>' +
       '<div class="hire-head"><div class="hire-id">' + C.avatar(emp, "lg") + '<div class="hire-name">' +
         '<h1>' + esc(emp.name) + '</h1>' +
-        '<div class="hire-meta"><span>' + esc(emp.role) + ' · ' + esc(emp.dept) + '</span><span class="faint" aria-hidden="true">•</span>' +
-          '<span>' + esc(stg.label) + ' · ' + YFP.views.stageSub(emp, stg) + '</span>' + C.pill(s.needsSupport) + '</div></div></div>' +
+        '<div class="hire-meta"><span>' + esc(emp.role) + ' · ' + esc(emp.dept) + '</span></div>' +
+          '<div class="hire-meta"><span>' + esc(stg.label) + ' · ' + YFP.views.stageSub(emp, stg) + '</span>' + C.pill(s.needsSupport) + '</div></div></div>' +
         '<div class="prog-cell"><div class="meter-top"><span><strong class="num">' + s.pct + '%</strong> complete</span><span class="faint num">' + s.done + ' of ' + s.total + ' tasks</span></div>' +
           C.bar(s.pct, s.needsSupport) +
           (s.needsSupport ? '<span class="overdue-txt cell-sub">' + icon("alert", 13) + ' ' + s.overdue + ' overdue</span>' : '<span class="faint cell-sub">No overdue tasks</span>') + '</div>' +

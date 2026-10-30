@@ -17,7 +17,7 @@
       '<input type="radio" name="cat" value="' + def + '" data-fkey="cat-' + def + '"' + (reason ? " disabled" : "") + (ui.pick === def ? " checked" : "") + '>' +
       '<span class="cat-main"><strong>' + esc(d.title) + '</strong>' + C.tags(def) +
         '<span class="muted cat-desc">' + esc(d.desc) + '</span>' +
-        (reason ? '<span class="cat-note">' + esc(reasonText(reason, emp)) + '</span>' : '') + '</span></label>';
+        (reason ? '<span class="cat-note">' + icon("lock", 13) + esc(reasonText(reason, emp)) + '</span>' : '') + '</span></label>';
   }
 
   function addTaskDialog(emp) {

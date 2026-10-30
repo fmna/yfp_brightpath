@@ -6,7 +6,8 @@
       "Bash(printf 'function stats\\(e\\){}\\\\nvar t = 1;\\\\nYFP.canRemove = x;\\\\nvar o = { status: function \\(\\) {} };\\\\nbuckets = null;\\\\nvar ok = H.stats\\(e\\); if \\(a.status === \"x\"\\) {}\\\\n')",
       "Bash(node tests/check-single-source.js)",
       "Bash(rm public/src/zz-probe.js)",
-      "Bash(node cdp.mjs m1-employee.mjs)"
+      "Bash(node cdp.mjs m1-employee.mjs)",
+      "Bash(node cdp.mjs m2-manager.mjs)"
     ]
   }
 }
