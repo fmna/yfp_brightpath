@@ -102,7 +102,8 @@ Minimal, per the brief. The only transitions are progress bars and the ring easi
 
 ## 8. Voice and copy
 
-- Written from the user's side: "Your first day is Monday, November 2", "Review Chris's plan", not system terms.
+- Written from the user's side: "Your Day 1 is Monday, November 2", "Review Chris's plan", not system terms.
+- **Day 1 terminology.** Use **"Day 1"** in sentences and labels ("Unlocks on Day 1", "Before Day 1", "3 days until Day 1"). Use **"D1"** only as shorthand inside tags and compact labels (*Pre-D1*, *Post-D1*). Never "first day", "day one" or "D-1".
 - Buttons say exactly what happens: **Mark as complete**, **Add to Alex's plan**, **Remove task**.
 - Rules are stated under each column ("Overdue, due today or due tomorrow") so the sorting logic is never a mystery.
 - Encouraging but not cute: "Nice work. These count toward your progress." No emoji.

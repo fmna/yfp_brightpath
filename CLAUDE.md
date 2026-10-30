@@ -16,6 +16,8 @@ The deployed app lives in `public/` (the only folder Vercel serves). Planning do
 
 If requirements conflict, prioritize the PM Brief.
 
+Terminology: write "Day 1" in sentences and labels, and "D1" only as shorthand in tags (Pre-D1, Post-D1). Never "first day" or "day one". See `docs/03-design-notes.md` §8.
+
 ## Working Style
 
 Before major architecture or framework decisions:

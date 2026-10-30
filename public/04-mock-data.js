@@ -447,6 +447,13 @@
       title: "Every catalog task is already in {first}’s plan",
       body: "Remove a task first if you want to re-add it with a new due date.",
       reproduce: "Fixture 'alexCatalogExhausted'"
+    },
+    catalogNoneAvailable: {
+      where: "Add task dialog",
+      when: "Nothing can be added, and at least one item is blocked because it's Pre-D1 after the start date",
+      title: "No catalog tasks can be added for {first} right now",
+      body: "The rest are already in {first}’s plan, or are Pre-D1 tasks that can’t be added after the start date.",
+      reproduce: "Fixture 'chrisCatalogExhausted', then open #team-chris → Add task"
     }
   };
 
@@ -481,7 +488,7 @@
       where: "Task Detail", trigger: "Alex opens 'Attend Day 1 orientation' (#task-alex-orientation)",
       expect: "Read-only panel, disabled button 'Available on Mon, Nov 2', resource link greyed out",
       // {start} = "Mon, Nov 2", {startLong} = "Monday, November 2"
-      notice: "This is a Post-D1 task. It unlocks on your first day, {startLong}.",
+      notice: "This is a Post-D1 task. It unlocks on Day 1, {startLong}.",
       linkPlaceholder: "Link available on {start}"
     },
     overdueTaskOpened: {
@@ -546,7 +553,8 @@
       }
     },
     alexFreshStart: {
-      description: "Alex has done nothing yet (0/11 = 0%); Done column empty",
+      description: "Alex has done nothing yet (0/11 = 0%); Done column empty. " +
+        "Offer letter and Welcome video are then overdue, so Alex shows as Needs support.",
       build: function () {
         var s = seed();
         s.alex.tasks.forEach(function (x) { x.done = false; x.doneOn = null; });
@@ -578,6 +586,14 @@
             s.alex.tasks.push(t(c, defaultDue(s.alex, c)));
           }
         });
+        return s;
+      }
+    },
+    chrisCatalogExhausted: {
+      description: "Every catalog item Chris can still get is in the plan; only Pre-D1 items remain, which can't be added after the start date",
+      build: function () {
+        var s = seed();
+        catalogFor(s.chris).available.forEach(function (c) { s.chris.tasks.push(t(c, defaultDue(s.chris, c))); });
         return s;
       }
     },
@@ -841,6 +857,8 @@
     var fx = FIXTURES.alexCatalogExhausted.build();
     eq("fixture.exhausted", catalogFor(fx.alex).available.length, 0);
     eq("fixture.exhausted.valid", validateStore(fx), true);
+    var cx = catalogFor(FIXTURES.chrisCatalogExhausted.build().chris);
+    eq("fixture.chrisExhausted", [cx.available.length, cx.unavailable.orgchart], [0, "preAfterStart"]);
     var corruptOk = false; try { JSON.parse(FIXTURES.corruptStorage.raw); } catch (e) { corruptOk = true; }
     eq("fixture.corrupt", corruptOk, true);
     eq("validateStore.rejects", [validateStore(null), validateStore({ alex: s.alex }), validateStore({ alex: { id: "alex", start: "2026-11-02", tasks: [{ def: "nope", due: "2026-11-01", done: false }] }, brooke: s.brooke, chris: s.chris })], [false, false, false]);

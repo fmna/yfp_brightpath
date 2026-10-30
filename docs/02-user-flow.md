@@ -86,7 +86,7 @@ Every view has its own URL hash (`#home`, `#task-alex-i9`, `#team`, `#team-chris
 **Job:** tell the new hire what to do next and how far along they are.
 
 Information order, top to bottom:
-1. **Greeting + Day 1 context.** "Your first day is Monday, November 2. Finish your Pre-D1 tasks before then."
+1. **Greeting + Day 1 context.** "Your Day 1 is Monday, November 2. Finish your Pre-D1 tasks before then."
 2. **Summary panel**, in three parts:
    - *Overall progress*: ring + "2 of 11 tasks done" + on-track/overdue line.
    - *Pre-D1 vs Post-D1 meters*: covers the success criterion about telling before-Day-1 work from after-Day-1 work. Pre-D1 shows the deadline ("Finish by Sun, Nov 1 · 3 days left"); Post-D1 shows "Locked until Mon, Nov 2".

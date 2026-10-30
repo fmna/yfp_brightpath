@@ -35,7 +35,7 @@
     if (st === "locked") {
       return '<div class="res-link res-locked" aria-disabled="true"><span class="res-icon">' + icon("lock", 18) + '</span>' +
         '<span class="res-text"><span class="res-label">' + esc(fill(ERR.lockedTaskOpened.linkPlaceholder, { start: dates.fmt(emp.start) })) + '</span>' +
-        '<span class="res-url">This task’s link unlocks on your first day</span></span></div>';
+        '<span class="res-url">This task’s link unlocks on Day 1</span></span></div>';
     }
     var shortUrl = d.link.url.replace(/^https:\/\//, "");
     return '<button type="button" class="res-link" data-action="demo-link" data-url="' + esc(shortUrl) + '" data-fkey="res-link">' +

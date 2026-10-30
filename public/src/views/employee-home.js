@@ -12,7 +12,7 @@
     return '<div class="page-head"><div><p class="eyebrow">' + (stg.started ? "Onboarding" : "Before Day 1") + '</p>' +
       '<h1>Welcome, ' + esc(emp.first) + '</h1>' +
       '<p class="muted">' + (stg.started ? 'Here is everything you need for your first weeks.' :
-        'Your first day is <strong>' + dates.fmtLong(emp.start) + '</strong>. Finish your Pre-D1 tasks before then.') + '</p></div></div>';
+        'Your Day 1 is <strong>' + dates.fmtLong(emp.start) + '</strong>. Finish your Pre-D1 tasks before then.') + '</p></div></div>';
   }
 
   function nextUp(emp, s, lockedCount) {
@@ -42,7 +42,7 @@
         '<div><p class="big num">' + s.done + ' of ' + s.total + ' tasks done</p>' +
         '<p class="muted summary-sub">' + (s.needsSupport ? '<span class="overdue-txt">' + icon("alert", 14) + ' ' + s.overdue + ' overdue</span>' : 'You’re on track') + '</p></div></div></section>' +
       '<section><div class="split-meter">' +
-        meter("chip-pre", "Pre-D1", "Before your first day", s.preDone, s.pre, preFoot) +
+        meter("chip-pre", "Pre-D1", "Before Day 1", s.preDone, s.pre, preFoot) +
         meter("chip-post", "Post-D1", "From Day 1 on", s.postDone, s.post, postFoot) +
       '</div></section>' +
       '<section>' + nextUp(emp, s, lockedCount) + '</section></div>';
