@@ -37,7 +37,7 @@ The build has one job: make the **primary demo workflow** reliable and easy to f
 | Icons | Inline SVG strings (`src/ui/icons.js`) | No icon library or extra requests. |
 | Routing | URL hash (`#home`, `#team-chris`, …) | Works on any static host with no rewrites. The back button and deep links work. |
 | Persistence | `localStorage` key `yfp-demo-v2` | Survives reloads. Falls back to memory if storage is blocked. |
-| Tests | `node 04-mock-data.js` self-check, plus one Node script with no dependencies | Runs anywhere Node is installed. Nothing to install. |
+| Tests | `node public/04-mock-data.js` self-check, plus one Node script with no dependencies | Runs anywhere Node is installed. Nothing to install. |
 | Hosting | Vercel, static ("Other" framework preset) | Zero build, zero config. |
 
 **Why classic scripts instead of ES modules.** Browsers block ES modules when a page is opened straight from disk (`file://`). Classic `defer` scripts run in the order they're listed and work both ways: double-clicking `index.html` and on Vercel. That keeps the demo working offline, and it's how the current prototype already runs. Each file wraps itself in an IIFE and attaches its exports to `window.YFP`.
@@ -381,7 +381,7 @@ Because every render replaces the DOM, focus is restored by key. Focusable eleme
 Do it in small steps and run the demo script (§10.2) after each one so the demo always works:
 
 0. Commit the current prototype as-is. Then move files into the §3 layout: docs and reference images into `docs/`, `index.html` and `04-mock-data.js` into `public/`. Create `README.md` (what YFP is, how to run locally, how to run the checks, how to deploy, links to `docs/`). Update the reading list and check commands in `CLAUDE.md`, and any file paths mentioned in the docs. Open `public/index.html` to confirm it still loads, and run `node public/04-mock-data.js`.
-1. Add the remaining helper API (§5.3) to `04-mock-data.js` and update `selfCheck`. Run `node 04-mock-data.js`.
+1. Add the remaining helper API (§5.3) to `04-mock-data.js` and update `selfCheck`. Run `node public/04-mock-data.js`.
 2. Move the CSS from `index.html` into `src/app.css`.
 3. Point the inline script at `MOCK.helpers` and delete its local rule functions. Run `node tests/check-single-source.js`.
 4. Split the inline script into the `src/` files in §3, one layer at a time (ui → core → views → main).

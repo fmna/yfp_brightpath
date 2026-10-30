@@ -14,6 +14,8 @@ The product's job is to *reduce* overwhelm for someone who hasn't started yet, s
 
 ## 2. How the references were used
 
+Both images are in `docs/references/`.
+
 | Reference | What was taken | What was deliberately not taken |
 |---|---|---|
 | **inspiration.png** (task board) | The three-column board for the employee dashboard. Cards with a **soft, column-tinted outline** and faint colored glow. Small pastel **tag chips** at the top of each card. Bold card title, short description, and date row with a calendar icon. Lots of white space. | The generic To Do / In Progress / Done model; YFP uses the brief's **Do today / Do later / Done**. The "+" add button on the employee board (employees don't create tasks). Drag and drop (completion is an explicit action). |

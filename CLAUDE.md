@@ -6,11 +6,13 @@ This repository contains a product management take-home assignment for a web-bas
 
 Before beginning implementation, read:
 
-- 01-pm-brief.md
-- 02-user-flow.md
-- 03-design-notes.md
-- 04-mock-data.js
-- 05-build-spec.md
+- docs/01-pm-brief.md
+- docs/02-user-flow.md
+- docs/03-design-notes.md
+- public/04-mock-data.js
+- docs/05-build-spec.md
+
+The deployed app lives in `public/` (the only folder Vercel serves). Planning docs and reference images live in `docs/` and are not deployed.
 
 If requirements conflict, prioritize the PM Brief.
 
@@ -21,7 +23,7 @@ Before major architecture or framework decisions:
 - Highlight any assumptions being made.
 
 Before finishing a milestone:
-- Run the `04-mock-data.js` self-check with Node (`node 04-mock-data.js`, or `node public/04-mock-data.js` after the restructure in `05-build-spec.md` §9.7).
+- Run the `04-mock-data.js` self-check with Node: `node public/04-mock-data.js`.
 - Run `node tests/check-single-source.js` once it exists.
 - Both must pass.
 

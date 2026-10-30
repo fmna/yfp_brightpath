@@ -2,7 +2,7 @@
  * YFP (Your First Path) · 04-mock-data.js
  * Mock onboarding data for the BrightPath Technologies prototype.
  *
- * Companion to:
+ * Companion to (in docs/):
  *   01-pm-brief.md      what and why (wins on any conflict)
  *   02-user-flow.md     demo script, screens, states, rules
  *   03-design-notes.md  visual direction
@@ -17,7 +17,7 @@
  *   Browser: <script src="04-mock-data.js"></script>  → window.YFP_MOCK_DATA
  *   Node:    const MOCK = require("./04-mock-data.js")
  *
- * Self-check (Node):  node 04-mock-data.js
+ * Self-check (Node):  node public/04-mock-data.js   (from the repo root)
  *   Recomputes every persona's progress, buckets and status with the rules
  *   below and compares them with EXPECTED. Exits non-zero on any mismatch.
  * ========================================================================== */
