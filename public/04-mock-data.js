@@ -480,8 +480,9 @@
     lockedTaskOpened: {
       where: "Task Detail", trigger: "Alex opens 'Attend Day 1 orientation' (#task-alex-orientation)",
       expect: "Read-only panel, disabled button 'Available on Mon, Nov 2', resource link greyed out",
-      notice: "This is a Post-D1 task. It unlocks on your first day, Monday, November 2.",
-      linkPlaceholder: "Link available on Mon, Nov 2"
+      // {start} = "Mon, Nov 2", {startLong} = "Monday, November 2"
+      notice: "This is a Post-D1 task. It unlocks on your first day, {startLong}.",
+      linkPlaceholder: "Link available on {start}"
     },
     overdueTaskOpened: {
       where: "Task Detail", trigger: "Fixture 'alexOverdue', open #task-alex-i9",
@@ -502,7 +503,7 @@
     prototypeLink: {
       where: "Task Detail resource link", trigger: "Click any unlocked resource link",
       expect: "No navigation; toast names the internal page",
-      toast: "Prototype link. In the live product this opens {url}"
+      toast: "Prototype link. In the live product this opens {url}."
     },
     storageCorrupt: {
       where: "App load", trigger: "localStorage['yfp-demo-v2'] holds invalid JSON (fixture 'corruptStorage')",
@@ -516,6 +517,19 @@
       where: "Top bar", trigger: "Click Reset demo",
       toast: "Demo data reset to the starting state."
     }
+  };
+
+  /* ---------------------------------------------------------------------------
+   * 10b. Toast copy for store mutations. selfCheck fills these and compares
+   *      them with the toasts in EXPECTED.
+   * ------------------------------------------------------------------------ */
+  var TOASTS = {
+    completed: "Task completed. Your progress went from {before}% to {after}%.",
+    reopened: "Marked as not done.",
+    added: "Added “{title}” to {first}’s plan.",
+    removed: "Removed “{title}” from {first}’s plan.",
+    prototypeLink: ERROR_SCENARIOS.prototypeLink.toast,
+    reset: ERROR_SCENARIOS.resetDemo.toast
   };
 
   /* ---------------------------------------------------------------------------
@@ -574,54 +588,112 @@
   };
 
   /* ---------------------------------------------------------------------------
-   * 12. Helpers: the same rules as index.html, used by the self-check
+   * 12. Helpers: the ONLY implementation of the rules (05-build-spec.md §5).
+   *     The app calls these through MOCK.helpers; selfCheck tests the same code.
+   *     Every rule helper takes `today` as an optional last argument
+   *     (default DEMO.today).
    * ------------------------------------------------------------------------ */
+
+  /* ----- Date utilities (ISO "YYYY-MM-DD" strings, compared as strings) ----- */
+  // Parse as a LOCAL date. new Date("2026-10-30") would parse as UTC.
   function D(s) { var a = s.split("-"); return new Date(+a[0], +a[1] - 1, +a[2]); }
   function iso(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
   function addDays(s, n) { var d = D(s); d.setDate(d.getDate() + n); return iso(d); }
-  function find(e, def) { for (var i = 0; i < e.tasks.length; i++) if (e.tasks[i].def === def) return e.tasks[i]; return null; }
-  function started(e, today) { return (today || DEMO.today) >= e.start; }
-  function status(e, tk, today) {
-    today = today || DEMO.today;
-    if (tk.done) return "done";
-    if (TASK_DEFS[tk.def].timing === "post" && !started(e, today)) return "locked";
-    if (tk.due < today) return "overdue";
-    if (tk.due <= addDays(today, 1)) return "today";
-    return "later";
-  }
-  function byDue(a, b) { return a.due < b.due ? -1 : a.due > b.due ? 1 : 0; }
-  function buckets(e) {
-    var b = { today: [], later: [], locked: [], done: [] };
-    e.tasks.slice().sort(byDue).forEach(function (tk) {
-      var s = status(e, tk);
-      b[s === "overdue" ? "today" : s].push(tk.def);
-    });
-    return b;
-  }
-  function workday(start, today) {
+  // Whole days from a to b (positive when b is later).
+  function diffDays(a, b) { return Math.round((D(b) - D(a)) / 864e5); }
+  // Working days (Mon–Fri) from start to today, inclusive.
+  function workdaysSince(start, today) {
     var n = 0, d = D(start), end = D(today || DEMO.today);
     while (d <= end) { var w = d.getDay(); if (w !== 0 && w !== 6) n++; d.setDate(d.getDate() + 1); }
     return n;
   }
   function fmt(s) { return D(s).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }); }
-  function stats(e) {
+  function isIso(s) { return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s); }
+
+  // Fill "{name}" placeholders in copy templates. Unknown names are left as is.
+  function fill(tpl, vals) {
+    vals = vals || {};
+    return String(tpl).replace(/\{(\w+)\}/g, function (m, k) { return Object.prototype.hasOwnProperty.call(vals, k) ? String(vals[k]) : m; });
+  }
+
+  /* ----- Rules ----- */
+  var makeTask = t;
+  function find(e, def) { for (var i = 0; i < e.tasks.length; i++) if (e.tasks[i].def === def) return e.tasks[i]; return null; }
+  function isStarted(e, today) { return (today || DEMO.today) >= e.start; }
+
+  // "done" | "locked" | "overdue" | "today" (due today or tomorrow) | "later"
+  function status(e, tk, today) {
+    today = today || DEMO.today;
+    if (tk.done) return "done";
+    if (TASK_DEFS[tk.def].timing === "post" && !isStarted(e, today)) return "locked";
+    if (tk.due < today) return "overdue";
+    if (tk.due <= addDays(today, 1)) return "today";
+    return "later";
+  }
+  function byDue(a, b) { return a.due < b.due ? -1 : a.due > b.due ? 1 : 0; }
+
+  // Task objects per bucket, each sorted by due date. Overdue goes in today.
+  function buckets(e, today) {
+    var b = { today: [], later: [], locked: [], done: [] };
+    e.tasks.slice().sort(byDue).forEach(function (tk) {
+      var s = status(e, tk, today);
+      b[s === "overdue" ? "today" : s].push(tk);
+    });
+    return b;
+  }
+
+  function stage(e, today) {
+    today = today || DEMO.today;
+    var on = isStarted(e, today);
+    return {
+      started: on,
+      label: on ? "Day " + workdaysSince(e.start, today) : "Starts " + fmt(e.start),
+      daysToStart: on ? 0 : diffDays(today, e.start),
+      workday: on ? workdaysSince(e.start, today) : 0
+    };
+  }
+
+  function stats(e, today) {
     var total = e.tasks.length, done = e.tasks.filter(function (x) { return x.done; }).length;
-    var overdue = e.tasks.filter(function (x) { return status(e, x) === "overdue"; }).sort(byDue);
+    var overdueTasks = e.tasks.filter(function (x) { return status(e, x, today) === "overdue"; }).sort(byDue);
     var pre = e.tasks.filter(function (x) { return TASK_DEFS[x.def].timing === "pre"; });
     var preDone = pre.filter(function (x) { return x.done; }).length;
-    var open = e.tasks.filter(function (x) { var s = status(e, x); return s !== "done" && s !== "locked"; }).sort(byDue);
+    var open = e.tasks.filter(function (x) { var s = status(e, x, today); return s !== "done" && s !== "locked"; }).sort(byDue);
+    var needsSupport = overdueTasks.length > 0;
     return {
       done: done, total: total, pct: total ? Math.round(done / total * 100) : 0,
       pre: pre.length, preDone: preDone, post: total - pre.length, postDone: done - preDone,
-      overdue: overdue.length, oldestOverdue: overdue[0] ? overdue[0].def : undefined,
+      overdue: overdueTasks.length, oldestOverdue: overdueTasks[0] ? overdueTasks[0].def : undefined,
       nextUp: open[0] ? open[0].def : null,
-      status: overdue.length ? "Needs support" : "On track",
-      stage: started(e) ? "Day " + workday(e.start) : "Starts " + fmt(e.start)
+      status: needsSupport ? "Needs support" : "On track",
+      stage: stage(e, today).label,
+      needsSupport: needsSupport,
+      next: open[0] || null,
+      overdueTasks: overdueTasks
     };
   }
-  function teamAverage(store) {
-    return Math.round(EMPLOYEE_ORDER.reduce(function (a, k) { return a + stats(store[k]).pct; }, 0) / EMPLOYEE_ORDER.length);
+
+  function teamAverage(store, today) {
+    return Math.round(EMPLOYEE_ORDER.reduce(function (a, k) { return a + stats(store[k], today).pct; }, 0) / EMPLOYEE_ORDER.length);
   }
+
+  // Manager table order: needs support first, then by start date.
+  function teamOrder(store, today) {
+    return EMPLOYEE_ORDER.slice().sort(function (a, b) {
+      var ra = stats(store[a], today).needsSupport ? 0 : 1, rb = stats(store[b], today).needsSupport ? 0 : 1;
+      return ra - rb || (store[a].start < store[b].start ? -1 : store[a].start > store[b].start ? 1 : 0);
+    });
+  }
+
+  // Earliest-starting employee who hasn't started yet, or null.
+  function startingNext(store, today) {
+    var next = EMPLOYEE_ORDER.filter(function (k) { return !isStarted(store[k], today); })
+      .sort(function (a, b) { return store[a].start < store[b].start ? -1 : 1; })[0];
+    if (!next) return null;
+    var s = stats(store[next], today);
+    return { employee: next, preD1Left: s.pre - s.preDone };
+  }
+
   // Pre-filled due date in the Add task dialog. Never in the past:
   // start date + catalog offset, or demo date + 2 days if that has passed.
   function defaultDue(e, def, today) {
@@ -629,14 +701,49 @@
     var due = addDays(e.start, TASK_DEFS[def].offset || 0);
     return due < today ? addDays(today, 2) : due;
   }
-  function catalogFor(e) {
+
+  function catalogFor(e, today) {
     var res = { available: [], unavailable: {} };
     CATALOG.forEach(function (c) {
       if (find(e, c)) res.unavailable[c] = "already";
-      else if (TASK_DEFS[c].timing === "pre" && started(e)) res.unavailable[c] = "preAfterStart";
+      else if (TASK_DEFS[c].timing === "pre" && isStarted(e, today)) res.unavailable[c] = "preAfterStart";
       else res.available.push(c);
     });
     return res;
+  }
+
+  // HR-required (by task definition, not addedBy) and completed tasks stay.
+  function canRemove(e, tk) {
+    if (TASK_DEFS[tk.def].source === "hr") return { ok: false, reason: "hrRequired" };
+    if (tk.done) return { ok: false, reason: "completed" };
+    return { ok: true };
+  }
+
+  // Most recent completion: this session's (justNow) first, else latest doneOn.
+  function lastActivity(e, today) {
+    today = today || DEMO.today;
+    var fresh = e.tasks.filter(function (x) { return x.justNow && x.done; });
+    if (fresh.length) return { kind: "justNow", task: fresh[fresh.length - 1], daysAgo: 0 };
+    var latest = null;
+    e.tasks.forEach(function (x) { if (x.done && x.doneOn && (!latest || x.doneOn >= latest.doneOn)) latest = x; });
+    if (!latest) return { kind: "none", task: null, daysAgo: null };
+    return { kind: "completed", task: latest, daysAgo: diffDays(latest.doneOn, today) };
+  }
+
+  // Shape check for data loaded from localStorage.
+  function validateStore(obj) {
+    if (!obj || typeof obj !== "object") return false;
+    return EMPLOYEE_ORDER.every(function (k) {
+      var e = obj[k];
+      if (!e || e.id !== k || !isIso(e.start) || !Array.isArray(e.tasks)) return false;
+      var seen = {};
+      return e.tasks.every(function (x) {
+        if (!x || !TASK_DEFS[x.def] || seen[x.def] || !isIso(x.due) || typeof x.done !== "boolean") return false;
+        if (x.done && !isIso(x.doneOn)) return false;
+        seen[x.def] = 1;
+        return true;
+      });
+    });
   }
 
   function selfCheck(log) {
@@ -646,6 +753,8 @@
       var a = JSON.stringify(actual), x = JSON.stringify(expected);
       if (a !== x) { fails++; log("FAIL " + label + ": got " + a + ", expected " + x); }
     }
+    function defs(list) { return list.map(function (x) { return x.def; }); }
+    function bucketDefs(e) { var b = buckets(e); return { today: defs(b.today), later: defs(b.later), locked: defs(b.locked), done: defs(b.done) }; }
     var s = seed();
 
     // Integrity
@@ -662,61 +771,79 @@
     });
     if (CATALOG.length < 5 || CATALOG.length > 10) { fails++; log("FAIL catalog size"); }
     CATALOG.forEach(function (c) { if (TASK_DEFS[c].source !== "cat" || typeof TASK_DEFS[c].offset !== "number") { fails++; log("FAIL catalog item " + c); } });
+    eq("validateStore.seed", validateStore(s), true);
 
     // Starting state
     EMPLOYEE_ORDER.forEach(function (k) {
       var st = stats(s[k]), ex = EXPECTED.start[k];
       Object.keys(ex).forEach(function (f) {
-        if (f === "buckets") eq(k + ".buckets", buckets(s[k]), ex.buckets);
-        else if (f === "daysToStart") eq(k + ".daysToStart", Math.round((D(s[k].start) - D(DEMO.today)) / 864e5), ex.daysToStart);
+        if (f === "buckets") eq(k + ".buckets", bucketDefs(s[k]), ex.buckets);
+        else if (f === "daysToStart") eq(k + ".daysToStart", stage(s[k]).daysToStart, ex.daysToStart);
         else eq(k + "." + f, st[f], ex[f]);
       });
+      eq(k + ".needsSupport", st.needsSupport, ex.status === "Needs support");
+      eq(k + ".next", st.next ? st.next.def : null, ex.nextUp);
+      eq(k + ".overdueTasks", defs(st.overdueTasks).length, ex.overdue);
     });
+    eq("chris.stage.workday", stage(s.chris).workday, 5);
     eq("team.averagePct", teamAverage(s), EXPECTED.start.team.averagePct);
     var pcts = EMPLOYEE_ORDER.map(function (k) { return [k, stats(s[k]).pct]; }).sort(function (a, b) { return b[1] - a[1]; });
     eq("team.highestPct", pcts[0][0], EXPECTED.start.team.highestPct);
-    eq("team.needSupport", EMPLOYEE_ORDER.filter(function (k) { return stats(s[k]).overdue > 0; }), EXPECTED.start.team.needSupport);
-    eq("team.startingNext.preD1Left", stats(s.alex).pre - stats(s.alex).preDone, EXPECTED.start.team.startingNext.preD1Left);
-    var rows = EMPLOYEE_ORDER.slice().sort(function (a, b) {
-      var ra = stats(s[a]).overdue > 0 ? 0 : 1, rb = stats(s[b]).overdue > 0 ? 0 : 1;
-      return ra - rb || (s[a].start < s[b].start ? -1 : 1);
-    });
-    eq("team.rowOrder", rows, EXPECTED.start.team.rowOrder);
+    eq("team.needSupport", EMPLOYEE_ORDER.filter(function (k) { return stats(s[k]).needsSupport; }), EXPECTED.start.team.needSupport);
+    eq("team.startingNext", startingNext(s), EXPECTED.start.team.startingNext);
+    eq("team.rowOrder", teamOrder(s), EXPECTED.start.team.rowOrder);
     eq("catalogForAlex", catalogFor(s.alex), EXPECTED.catalogForAlex);
     eq("catalogForChris", catalogFor(s.chris), EXPECTED.catalogForChris);
     eq("defaultDue.future", defaultDue(s.alex, "orgchart"), "2026-11-01");
     eq("defaultDue.past", defaultDue(s.chris, "one1"), "2026-11-01"); // Oct 27 has passed → Oct 30 + 2
+    eq("canRemove.hr", canRemove(s.alex, find(s.alex, "i9")), { ok: false, reason: "hrRequired" });
+    eq("canRemove.completed", canRemove(s.alex, find(s.alex, "welcome")), { ok: false, reason: "completed" });
+    eq("canRemove.open", canRemove(s.alex, find(s.alex, "handbook")), { ok: true });
+    eq("lastActivity.start", lastActivity(s.alex).kind + ":" + lastActivity(s.alex).task.def + ":" + lastActivity(s.alex).daysAgo, "completed:welcome:3");
 
     // Step 3: Alex completes the I-9
-    var i9 = find(s.alex, "i9"); i9.done = true; i9.doneOn = DEMO.today;
+    var before = stats(s.alex).pct;
+    var i9 = find(s.alex, "i9"); i9.done = true; i9.doneOn = DEMO.today; i9.justNow = true;
     var a1 = stats(s.alex);
+    eq("afterComplete.done", a1.done, EXPECTED.afterComplete.alex.done);
+    eq("afterComplete.preDone", a1.preDone, EXPECTED.afterComplete.alex.preDone);
     eq("afterComplete.pct", a1.pct, EXPECTED.afterComplete.alex.pct);
     eq("afterComplete.nextUp", a1.nextUp, EXPECTED.afterComplete.alex.nextUp);
     eq("afterComplete.team", teamAverage(s), EXPECTED.afterComplete.team.averagePct);
+    eq("afterComplete.lastActivity", lastActivity(s.alex).kind, "justNow");
+    eq("afterComplete.toast", fill(TOASTS.completed, { before: before, after: a1.pct }), EXPECTED.afterComplete.toast);
 
     // Step 8: Morgan adds the org chart review
     var item = DEMO_SCRIPT.addTask.catalogItem;
-    eq("addTask.defaultDue", addDays(s.alex.start, TASK_DEFS[item].offset), DEMO_SCRIPT.addTask.defaultDue);
-    s.alex.tasks.push(t(item, DEMO_SCRIPT.addTask.defaultDue));
+    eq("addTask.defaultDue", defaultDue(s.alex, item), DEMO_SCRIPT.addTask.defaultDue);
+    var added = makeTask(item, defaultDue(s.alex, item), null, "morgan");
+    s.alex.tasks.push(added);
     eq("afterAdd.pct", stats(s.alex).pct, EXPECTED.afterAdd.alex.pct);
     eq("afterAdd.team", teamAverage(s), EXPECTED.afterAdd.team.averagePct);
-    eq("afterAdd.bucket", buckets(s.alex).later.indexOf(item) > -1, true);
+    eq("afterAdd.bucket", buckets(s.alex).later.indexOf(added) > -1, true);
+    eq("afterAdd.canRemove", canRemove(s.alex, added).ok, true);
+    eq("afterAdd.toast", fill(TOASTS.added, { title: TASK_DEFS[item].title, first: s.alex.first }), EXPECTED.afterAdd.toast);
 
     // Step 9: Morgan removes it
     s.alex.tasks = s.alex.tasks.filter(function (x) { return x.def !== item; });
     eq("afterRemove.pct", stats(s.alex).pct, EXPECTED.afterRemove.alex.pct);
     eq("afterRemove.team", teamAverage(s), EXPECTED.afterRemove.team.averagePct);
+    eq("afterRemove.toast", fill(TOASTS.removed, { title: TASK_DEFS[item].title, first: s.alex.first }), EXPECTED.afterRemove.toast);
 
     // Fixtures
     var f1 = FIXTURES.alexAllCaughtUp.build();
     eq("fixture.allCaughtUp.nextUp", stats(f1.alex).nextUp, null);
     eq("fixture.allCaughtUp.locked", buckets(f1.alex).locked.length, 5);
+    eq("fixture.allCaughtUp.copy", fill(EMPTY_STATES.allCaughtUp.body, { n: 5, startDate: fmt(f1.alex.start) }), "5 more tasks unlock on Mon, Nov 2.");
     eq("fixture.freshStart.done", buckets(FIXTURES.alexFreshStart.build().alex).done.length, 0);
     eq("fixture.overdue.status", stats(FIXTURES.alexOverdue.build().alex).status, "Needs support");
     eq("fixture.removed", find(FIXTURES.alexTaskRemoved.build().alex, "photo"), null);
-    eq("fixture.exhausted", catalogFor(FIXTURES.alexCatalogExhausted.build().alex).available.length, 0);
+    var fx = FIXTURES.alexCatalogExhausted.build();
+    eq("fixture.exhausted", catalogFor(fx.alex).available.length, 0);
+    eq("fixture.exhausted.valid", validateStore(fx), true);
     var corruptOk = false; try { JSON.parse(FIXTURES.corruptStorage.raw); } catch (e) { corruptOk = true; }
     eq("fixture.corrupt", corruptOk, true);
+    eq("validateStore.rejects", [validateStore(null), validateStore({ alex: s.alex }), validateStore({ alex: { id: "alex", start: "2026-11-02", tasks: [{ def: "nope", due: "2026-11-01", done: false }] }, brooke: s.brooke, chris: s.chris })], [false, false, false]);
     eq("seed is fresh each call", stats(seed().alex).pct, 18);
 
     log(fails ? fails + " check(s) failed" : "All checks passed");
@@ -736,7 +863,17 @@
     expected: EXPECTED,
     emptyStates: EMPTY_STATES,
     errorScenarios: ERROR_SCENARIOS,
+    toasts: TOASTS,
     fixtures: FIXTURES,
-    helpers: { status: status, buckets: buckets, stats: stats, teamAverage: teamAverage, catalogFor: catalogFor, defaultDue: defaultDue, addDays: addDays, selfCheck: selfCheck }
+    helpers: {
+      // Rules
+      makeTask: makeTask, findTask: find, isStarted: isStarted, status: status, byDue: byDue, buckets: buckets,
+      stats: stats, stage: stage, teamOrder: teamOrder, teamAverage: teamAverage,
+      startingNext: startingNext, catalogFor: catalogFor, defaultDue: defaultDue,
+      canRemove: canRemove, lastActivity: lastActivity, validateStore: validateStore,
+      // Date utilities and copy
+      addDays: addDays, diffDays: diffDays, workdaysSince: workdaysSince, parseDate: D, fill: fill,
+      selfCheck: selfCheck
+    }
   };
 });
