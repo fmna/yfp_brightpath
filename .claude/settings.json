@@ -7,7 +7,8 @@
       "Bash(node tests/check-single-source.js)",
       "Bash(rm public/src/zz-probe.js)",
       "Bash(node cdp.mjs m1-employee.mjs)",
-      "Bash(node cdp.mjs m2-manager.mjs)"
+      "Bash(node cdp.mjs m2-manager.mjs)",
+      "Bash(node cdp.mjs m3-edge.mjs)"
     ]
   }
 }

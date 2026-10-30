@@ -447,6 +447,13 @@
       title: "Every catalog task is already in {first}’s plan",
       body: "Remove a task first if you want to re-add it with a new due date.",
       reproduce: "Fixture 'alexCatalogExhausted'"
+    },
+    catalogNoneAvailable: {
+      where: "Add task dialog",
+      when: "Nothing can be added, and at least one item is blocked because it's Pre-D1 after the start date",
+      title: "No catalog tasks can be added for {first} right now",
+      body: "The rest are already in {first}’s plan, or are Pre-D1 tasks that can’t be added after the start date.",
+      reproduce: "Fixture 'chrisCatalogExhausted', then open #team-chris → Add task"
     }
   };
 
@@ -578,6 +585,14 @@
             s.alex.tasks.push(t(c, defaultDue(s.alex, c)));
           }
         });
+        return s;
+      }
+    },
+    chrisCatalogExhausted: {
+      description: "Every catalog item Chris can still get is in the plan; only Pre-D1 items remain, which can't be added after the start date",
+      build: function () {
+        var s = seed();
+        catalogFor(s.chris).available.forEach(function (c) { s.chris.tasks.push(t(c, defaultDue(s.chris, c))); });
         return s;
       }
     },
@@ -841,6 +856,8 @@
     var fx = FIXTURES.alexCatalogExhausted.build();
     eq("fixture.exhausted", catalogFor(fx.alex).available.length, 0);
     eq("fixture.exhausted.valid", validateStore(fx), true);
+    var cx = catalogFor(FIXTURES.chrisCatalogExhausted.build().chris);
+    eq("fixture.chrisExhausted", [cx.available.length, cx.unavailable.orgchart], [0, "preAfterStart"]);
     var corruptOk = false; try { JSON.parse(FIXTURES.corruptStorage.raw); } catch (e) { corruptOk = true; }
     eq("fixture.corrupt", corruptOk, true);
     eq("validateStore.rejects", [validateStore(null), validateStore({ alex: s.alex }), validateStore({ alex: { id: "alex", start: "2026-11-02", tasks: [{ def: "nope", due: "2026-11-01", done: false }] }, brooke: s.brooke, chris: s.chris })], [false, false, false]);

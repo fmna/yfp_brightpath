@@ -24,8 +24,11 @@
     var ui = YFP.store.ui, cat = H.catalogFor(emp);
     var list = cat.available.map(function (c) { return item(emp, c, null); })
       .concat(MOCK.catalog.filter(function (c) { return cat.unavailable[c]; }).map(function (c) { return item(emp, c, cat.unavailable[c]); }));
+    // Nothing to add: "all already in the plan" vs. "some are Pre-D1 after the start date".
+    var allInPlan = Object.keys(cat.unavailable).every(function (c) { return cat.unavailable[c] === "already"; });
+    var empty = allInPlan ? EMPTY.catalogExhausted : EMPTY.catalogNoneAvailable;
     var body = cat.available.length ? '<div class="catalog" role="radiogroup" aria-label="Task catalog">' + list.join("") + '</div>' :
-      C.emptyState(fill(EMPTY.catalogExhausted.title, { first: emp.first }), EMPTY.catalogExhausted.body);
+      C.emptyState(fill(empty.title, { first: emp.first }), fill(empty.body, { first: emp.first }));
     var due = ui.pick ?
       '<label class="field field-inline" for="due-input">Due date<input type="date" id="due-input" value="' + esc(ui.due) + '" min="' + TODAY + '" required data-fkey="due"></label>' :
       '<span class="faint foot-hint">' + (cat.available.length ? "Select a task to set its due date" : "") + '</span>';
