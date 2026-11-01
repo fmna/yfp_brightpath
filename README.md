@@ -4,7 +4,7 @@ A browser-based onboarding prototype for BrightPath Technologies. New hires see 
 
 **▶ [Open the live demo](https://yfpbrightpath.vercel.app)**: one click, runs in your browser. No login, no install. Then take the [2-minute tour](#1-try-it-in-two-minutes).
 
-**Demo video:** [LINK] | **Repository:** https://github.com/fmna/yfp_brightpath
+**Demo video:** https://www.youtube.com/watch?v=aawBpnjDmZk | **Repository:** https://github.com/fmna/yfp_brightpath
 
 **Contents:** [1. Try it](#1-try-it-in-two-minutes) · [2. Product thinking](#2-the-product-thinking) · [3. Decisions and trade-offs](#3-decisions-and-trade-offs) · [4. Quality and testing](#4-quality-and-testing) · [5. What I'd do next](#5-what-id-do-next) · [6. For developers](#6-for-developers)
 
